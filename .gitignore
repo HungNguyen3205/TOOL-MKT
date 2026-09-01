@@ -1,0 +1,36 @@
+node_modules/
+vendor/
+.env
+.env.*.local
+.DS_Store
+Thumbs.db
+
+# Frontend
+frontend/dist/
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+backend/storage/*.key
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/database/database.sqlite
+backend/.env
+backend/.env.testing
+backend/.phpunit.result.cache
+
+# IDEs / OS
+.idea/
+.vscode/
+*.swp
+*.swo
