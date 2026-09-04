@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\BelongsToWorkspace;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class FacebookPage extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, BelongsToWorkspace;
 
     protected $fillable = [
         'page_id',
@@ -43,5 +44,10 @@ class FacebookPage extends Model
     public function publicationLogs()
     {
         return $this->hasMany(PublicationLog::class);
+    }
+
+    public function workspace()
+    {
+        return $this->belongsTo(Workspace::class);
     }
 }

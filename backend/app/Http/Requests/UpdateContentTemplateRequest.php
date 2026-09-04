@@ -18,7 +18,9 @@ class UpdateContentTemplateRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:2000',
-            'objective' => 'required|in:sales,introduction,promotion,engagement,education,event',
+            'objective' => 'required|string',
+            'platform' => 'nullable|string',
+            'content_type' => 'nullable|string',
             'opening_style' => 'nullable|string|max:1000',
             'body_structure' => 'nullable|array|max:20',
             'body_structure.*' => 'string|max:500',
@@ -26,6 +28,10 @@ class UpdateContentTemplateRequest extends FormRequest
             'hashtag_instruction' => 'nullable|string|max:1000',
             'additional_instruction' => 'nullable|string|max:3000',
             'example_content' => 'nullable|string|max:10000',
+            'default_length' => 'nullable|string',
+            'default_number_of_versions' => 'nullable|integer|min:1|max:10',
+            'required_fields' => 'nullable|array',
+            'required_fields.*' => 'string|max:100',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -38,6 +44,7 @@ class UpdateContentTemplateRequest extends FormRequest
         ]);
 
         $this->normalizeArray('body_structure');
+        $this->normalizeArray('required_fields');
     }
 
     private function normalizeArray($field)

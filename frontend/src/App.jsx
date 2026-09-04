@@ -4,11 +4,15 @@ import { checkHealth } from './api';
 import ContentGenerator from './pages/ContentGenerator';
 import PostList from './pages/PostList';
 import PostEditor from './pages/PostEditor';
+import PostPublish from './pages/PostPublish';
 import BrandList from './pages/BrandList';
 import BrandEditor from './pages/BrandEditor';
 import TemplateList from './pages/TemplateList';
 import TemplateEditor from './pages/TemplateEditor';
 import FacebookPages from './pages/FacebookPages';
+import PublicationHistory from './pages/PublicationHistory';
+import Settings from './pages/Settings';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 
 function App() {
@@ -37,6 +41,7 @@ function App() {
 
   return (
     <div className="container">
+      <Toaster position="top-right" />
       <header className="header">
         <h1>AI Facebook Content Tool</h1>
       </header>
@@ -56,7 +61,12 @@ function App() {
             <li className={location.pathname === '/facebook-pages' ? 'active-nav' : ''}>
               <Link to="/facebook-pages">Facebook Pages</Link>
             </li>
-            <li>Cài đặt (Chưa mở)</li>
+            <li className={location.pathname === '/publications' ? 'active-nav' : ''}>
+              <Link to="/publications">Lịch sử đăng bài</Link>
+            </li>
+            <li className={location.pathname === '/settings' ? 'active-nav' : ''}>
+              <Link to="/settings">Cài đặt</Link>
+            </li>
           </ul>
         </nav>
         <div className="sidebar-status">
@@ -74,6 +84,8 @@ function App() {
           <Route path="/posts" element={<PostList />} />
           <Route path="/posts/new" element={<PostEditor />} />
           <Route path="/posts/:id/edit" element={<PostEditor />} />
+          <Route path="/posts/:id/publish" element={<PostPublish />} />
+          <Route path="/posts/:id/publications" element={<PublicationHistory />} />
           <Route path="/brands" element={<BrandList />} />
           <Route path="/brands/new" element={<BrandEditor />} />
           <Route path="/brands/:id/edit" element={<BrandEditor />} />
@@ -81,6 +93,8 @@ function App() {
           <Route path="/brands/:brandId/templates/new" element={<TemplateEditor />} />
           <Route path="/brands/:brandId/templates/:templateId/edit" element={<TemplateEditor />} />
           <Route path="/facebook-pages" element={<FacebookPages />} />
+          <Route path="/publications" element={<PublicationHistory />} />
+          <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>
     </div>

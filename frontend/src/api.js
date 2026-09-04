@@ -1,5 +1,5 @@
 export const checkHealth = async () => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   try {
     const response = await fetch(`${baseUrl}/health`);
     if (!response.ok) {
@@ -13,7 +13,7 @@ export const checkHealth = async () => {
 };
 
 export const generateContent = async (payload) => {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   try {
     const response = await fetch(`${baseUrl}/content/generate`, {
       method: 'POST',

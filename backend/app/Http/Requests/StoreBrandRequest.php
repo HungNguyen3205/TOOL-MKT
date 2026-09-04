@@ -27,6 +27,39 @@ class StoreBrandRequest extends FormRequest
             'slogan' => 'nullable|string|max:500',
             'default_cta' => 'nullable|string|max:1000',
             
+            'brand_type' => 'nullable|string|max:50',
+            'website' => 'nullable|url|max:255',
+            'hotline' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'address' => 'nullable|string|max:500',
+            
+            'service_areas' => 'nullable|array|max:20',
+            'service_areas.*' => 'string|max:255',
+            
+            'positioning' => 'nullable|string|max:3000',
+            'unique_value_proposition' => 'nullable|string|max:3000',
+            'brand_story' => 'nullable|string|max:5000',
+            'brand_personality' => 'nullable|string|max:500',
+            
+            'competitive_advantages' => 'nullable|array|max:20',
+            'competitive_advantages.*' => 'string|max:500',
+            
+            'customer_pain_points' => 'nullable|array|max:20',
+            'customer_pain_points.*' => 'string|max:500',
+            
+            'customer_desires' => 'nullable|array|max:20',
+            'customer_desires.*' => 'string|max:500',
+            
+            'customer_objections' => 'nullable|array|max:20',
+            'customer_objections.*' => 'string|max:500',
+            
+            'default_language' => 'nullable|string|max:50',
+            'emoji_limit' => 'nullable|integer|min:0',
+            'preferred_addressing' => 'nullable|string|max:255',
+            
+            'platform_rules' => 'nullable|array|max:20',
+            'platform_rules.*' => 'string|max:500',
+
             'default_hashtags' => 'nullable|array|max:30',
             'default_hashtags.*' => 'string|max:100',
             
@@ -55,6 +88,12 @@ class StoreBrandRequest extends FormRequest
         $this->normalizeArray('required_keywords');
         $this->normalizeArray('prohibited_terms');
         $this->normalizeArray('writing_rules');
+        $this->normalizeArray('service_areas');
+        $this->normalizeArray('competitive_advantages');
+        $this->normalizeArray('customer_pain_points');
+        $this->normalizeArray('customer_desires');
+        $this->normalizeArray('customer_objections');
+        $this->normalizeArray('platform_rules');
     }
 
     private function normalizeArray($field, $isHashtag = false)

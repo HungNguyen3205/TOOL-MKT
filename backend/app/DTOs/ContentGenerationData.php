@@ -11,33 +11,34 @@ class ContentGenerationData
         public readonly string $topic,
         public readonly string $mainInformation,
         public readonly string $objective,
-        public readonly string $tone,
-        public readonly string $length,
+        public readonly ?string $tone = null,
+        public readonly ?string $length = null,
         public readonly int $numberOfVersions,
         public readonly ?string $targetAudience = null,
         public readonly array $requiredKeywords = [],
         public readonly array $excludedContent = [],
+        public readonly ?string $ctaInstruction = null,
+        public readonly ?string $hashtagInstruction = null,
         public readonly ?Brand $brand = null,
-        public readonly ?ContentTemplate $template = null
+        public readonly ?ContentTemplate $template = null,
+        public readonly array $knowledgeItems = [],
+        public readonly bool $useContactInfo = false
     ) {}
 
     public static function fromArray(array $data, ?Brand $brand = null, ?ContentTemplate $template = null): self
     {
         // Gộp dữ liệu
-        $mergedKeywords = array_merge(
-            $data['required_keywords'] ?? [],
-            $brand ? ($brand->required_keywords ?? []) : []
-        );
-        $mergedKeywords = array_values(array_unique(array_filter($mergedKeywords)));
+        $requiredKeywords = $data['required_keywords'] ?? null;
+        if ($requiredKeywords === null) {
+            $requiredKeywords = $brand ? ($brand->required_keywords ?? []) : [];
+        }
 
-        $mergedExcluded = array_merge(
-            $data['excluded_content'] ?? [],
-            $brand ? ($brand->prohibited_terms ?? []) : []
-        );
-        $mergedExcluded = array_values(array_unique(array_filter($mergedExcluded)));
+        $excludedContent = $data['excluded_content'] ?? null;
+        if ($excludedContent === null) {
+            $excludedContent = $brand ? ($brand->prohibited_terms ?? []) : [];
+        }
 
-        // Tone & Target Audience ưu tiên form
-        $tone = $data['tone'];
+        $tone = $data['tone'] ?? null;
         if (!$tone && $brand && $brand->tone) {
             $tone = $brand->tone;
         }
@@ -45,6 +46,16 @@ class ContentGenerationData
         $targetAudience = $data['target_audience'] ?? null;
         if (!$targetAudience && $brand && $brand->target_audience) {
             $targetAudience = $brand->target_audience;
+        }
+
+        $ctaInstruction = $data['cta_instruction'] ?? null;
+        if (!$ctaInstruction) {
+            $ctaInstruction = $template ? $template->cta_instruction : ($brand ? $brand->default_cta : null);
+        }
+
+        $hashtagInstruction = $data['hashtag_instruction'] ?? null;
+        if (!$hashtagInstruction) {
+            $hashtagInstruction = $template ? $template->hashtag_instruction : ($brand ? ($brand->default_hashtags ? implode(' ', $brand->default_hashtags) : null) : null);
         }
 
         return new self(
@@ -55,10 +66,14 @@ class ContentGenerationData
             length: $data['length'],
             numberOfVersions: $data['number_of_versions'],
             targetAudience: $targetAudience,
-            requiredKeywords: $mergedKeywords,
-            excludedContent: $mergedExcluded,
+            requiredKeywords: is_array($requiredKeywords) ? $requiredKeywords : [],
+            excludedContent: is_array($excludedContent) ? $excludedContent : [],
+            ctaInstruction: $ctaInstruction,
+            hashtagInstruction: $hashtagInstruction,
             brand: $brand,
-            template: $template
+            template: $template,
+            knowledgeItems: $data['knowledge_items'] ?? [],
+            useContactInfo: $data['use_contact_info'] ?? false
         );
     }
 }

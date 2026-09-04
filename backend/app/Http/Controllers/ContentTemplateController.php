@@ -133,4 +133,51 @@ class ContentTemplateController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Đã cập nhật trạng thái mẫu.']);
     }
+
+    public function resolveTemplate(Request $request, $brandId)
+    {
+        $brand = Brand::find($brandId);
+        if (!$brand) return response()->json(['success' => false, 'error_code' => 'BRAND_NOT_FOUND'], 404);
+
+        $objective = $request->input('objective');
+        $platform = $request->input('platform', 'facebook');
+        $contentType = $request->input('content_type');
+
+        // Order of resolution:
+        // 1. brand + platform + objective + content_type + is_default
+        // 2. brand + platform + objective + is_default
+        // 3. brand + objective + content_type
+        // 4. brand + objective
+        // 5. brand + is_default
+        
+        $query = $brand->templates()->where('is_active', true);
+
+        // We will fetch all active templates for this brand and filter in memory to find the best match.
+        $templates = $query->get();
+
+        if ($templates->isEmpty()) {
+            return response()->json(['success' => true, 'data' => null]);
+        }
+
+        $bestMatch = null;
+        $highestScore = -1;
+
+        foreach ($templates as $t) {
+            $score = 0;
+            if ($t->objective === $objective) $score += 10;
+            if ($t->platform === $platform) $score += 5;
+            if ($t->content_type === $contentType && $contentType) $score += 5;
+            if ($t->is_default) $score += 2;
+
+            if ($score > $highestScore) {
+                $highestScore = $score;
+                $bestMatch = $t;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $bestMatch ? new ContentTemplateResource($bestMatch) : null
+        ]);
+    }
 }

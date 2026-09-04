@@ -38,18 +38,32 @@ export const disconnectPage = async (id) => {
   return res.json();
 };
 
-export const publishPost = async (postId, facebookPageId) => {
+export const publishPost = async (postId, payload) => {
   const res = await fetch(`/api/posts/${postId}/publish`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ facebook_page_id: facebookPageId, confirmation: true }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw await res.json();
   return res.json();
 };
 
-export const getPublicationLogs = async (postId) => {
-  const res = await fetch(`/api/posts/${postId}/publication-logs`);
+export const getPublications = async (postId) => {
+  const res = await fetch(`/api/posts/${postId}/publications`);
+  if (!res.ok) throw await res.json();
+  return res.json();
+};
+
+export const getAllPublications = async () => {
+  const res = await fetch(`/api/publications`);
+  if (!res.ok) throw await res.json();
+  return res.json();
+};
+
+export const retryPublication = async (publicationId) => {
+  const res = await fetch(`/api/publications/${publicationId}/retry`, {
+    method: 'POST'
+  });
   if (!res.ok) throw await res.json();
   return res.json();
 };

@@ -143,21 +143,42 @@ class FacebookPageController extends Controller
         try {
             $data = $this->facebookService->verifyPageToken($page->page_id, $page->access_token);
             
-            $page->update([
-                'connection_status' => 'connected',
-                'last_verified_at' => Carbon::now(),
-                'last_error_code' => null,
-                'last_error_message' => null,
-            ]);
+            // For real validation, check granted_scopes vs required
+            $tasks = $page->granted_scopes ?? [];
+            $requiredPermissions = ['CREATE_CONTENT', 'MANAGE']; // adjust to your actual required tasks
+            $missingPermissions = array_diff($requiredPermissions, $tasks);
+            
+            if (empty($missingPermissions)) {
+                $page->update([
+                    'connection_status' => 'connected',
+                    'last_verified_at' => Carbon::now(),
+                    'last_error_code' => null,
+                    'last_error_message' => null,
+                ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Token còn hiệu lực.',
-                'data' => $page
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Token còn hiệu lực và đủ quyền.',
+                    'data' => $page
+                ]);
+            } else {
+                $page->update([
+                    'connection_status' => 'permission_missing',
+                    'last_verified_at' => Carbon::now(),
+                    'last_error_code' => 'FACEBOOK_PERMISSION_MISSING',
+                    'last_error_message' => 'Thiếu quyền: ' . implode(', ', $missingPermissions),
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token hợp lệ nhưng thiếu quyền đăng bài.',
+                    'error_code' => 'FACEBOOK_PERMISSION_MISSING',
+                    'data' => $page
+                ], 403);
+            }
         } catch (\Exception $e) {
             $page->update([
-                'connection_status' => 'error',
+                'connection_status' => 'token_expired',
                 'last_error_code' => 'FACEBOOK_TOKEN_INVALID',
                 'last_error_message' => $e->getMessage(),
                 'last_verified_at' => Carbon::now(),

@@ -88,7 +88,7 @@ class ContentGenerationTest extends TestCase
             'api.openai.com/*' => Http::response('Unauthorized', 401)
         ]);
         $response = $this->postJson('/api/content/generate', $this->validPayload());
-        $response->assertStatus(401)->assertJsonPath('error_code', 'VALIDATION_FAILED');
+        $response->assertStatus(401)->assertJsonPath('error_code', 'OPENAI_AUTHENTICATION_FAILED');
     }
 
     // 5. Test hết quota (OpenAI 429)
@@ -99,7 +99,7 @@ class ContentGenerationTest extends TestCase
             'api.openai.com/*' => Http::response('Rate limit exceeded', 429)
         ]);
         $response = $this->postJson('/api/content/generate', $this->validPayload());
-        $response->assertStatus(429)->assertJsonPath('error_code', 'CONTENT_GENERATION_FAILED');
+        $response->assertStatus(429)->assertJsonPath('error_code', 'OPENAI_RATE_LIMITED');
     }
 
     // 6. Test timeout (OpenAI)
@@ -110,7 +110,7 @@ class ContentGenerationTest extends TestCase
             throw new \Illuminate\Http\Client\ConnectionException('Operation timed out');
         });
         $response = $this->postJson('/api/content/generate', $this->validPayload());
-        $response->assertStatus(504)->assertJsonPath('error_code', 'OLLAMA_TIMEOUT');
+        $response->assertStatus(504)->assertJsonPath('error_code', 'OPENAI_TIMEOUT');
     }
 
     // 7. Test JSON sai (OpenAI)
@@ -123,7 +123,7 @@ class ContentGenerationTest extends TestCase
             ], 200)
         ]);
         $response = $this->postJson('/api/content/generate', $this->validPayload());
-        $response->assertStatus(502)->assertJsonPath('error_code', 'INVALID_AI_RESPONSE');
+        $response->assertStatus(502)->assertJsonPath('error_code', 'OPENAI_INVALID_RESPONSE');
     }
 
     // 8. Test fallback bị tắt

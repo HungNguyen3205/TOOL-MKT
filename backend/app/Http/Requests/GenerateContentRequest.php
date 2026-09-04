@@ -35,6 +35,9 @@ class GenerateContentRequest extends FormRequest
             'required_keywords.*' => 'string|max:100',
             'excluded_content' => 'nullable|array|max:20',
             'excluded_content.*' => 'string|max:300',
+            'knowledge_items' => 'nullable|array|max:5',
+            'knowledge_items.*' => 'integer|exists:brand_knowledge_items,id',
+            'use_contact_info' => 'nullable|boolean',
             'number_of_versions' => 'required|integer|min:1|max:5',
         ];
     }

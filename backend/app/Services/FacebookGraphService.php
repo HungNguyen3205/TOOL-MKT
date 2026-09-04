@@ -18,9 +18,16 @@ class FacebookGraphService
 
     public function __construct()
     {
-        $this->appId = config('services.facebook.app_id');
-        $this->appSecret = config('services.facebook.app_secret');
-        $this->redirectUri = config('services.facebook.redirect');
+        $settings = \App\Models\Setting::whereIn('key', [
+            'FACEBOOK_APP_ID', 
+            'FACEBOOK_APP_SECRET', 
+            'FACEBOOK_REDIRECT_URI'
+        ])->pluck('value', 'key');
+
+        $this->appId = $settings['FACEBOOK_APP_ID'] ?? config('services.facebook.app_id');
+        $this->appSecret = $settings['FACEBOOK_APP_SECRET'] ?? config('services.facebook.app_secret');
+        $this->redirectUri = $settings['FACEBOOK_REDIRECT_URI'] ?? config('services.facebook.redirect');
+        
         $this->graphVersion = config('services.facebook.graph_version', 'v20.0');
         $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement');
         $this->timeout = config('services.facebook.timeout', 30);
@@ -80,6 +87,15 @@ class FacebookGraphService
 
     public function verifyPageToken(string $pageId, string $pageToken): array
     {
+        // Mock bypass
+        if (strpos($pageToken, 'mock_token_') === 0) {
+            return [
+                'id' => $pageId,
+                'name' => 'Mock Page',
+                'permissions' => ['CREATE_CONTENT', 'MANAGE']
+            ];
+        }
+
         // Try to fetch page details using its token to verify if it's still valid
         $response = Http::timeout($this->timeout)->get("{$this->baseUrl}/{$pageId}", [
             'access_token' => $pageToken,
@@ -96,6 +112,15 @@ class FacebookGraphService
 
     public function publishTextPost(string $pageId, string $pageToken, string $message): array
     {
+        // Mock bypass
+        if (strpos($pageToken, 'mock_token_') === 0) {
+            // Simulate processing time
+            sleep(2);
+            return [
+                'id' => $pageId . '_' . uniqid()
+            ];
+        }
+
         $response = Http::timeout($this->timeout)->post("{$this->baseUrl}/{$pageId}/feed", [
             'access_token' => $pageToken,
             'message' => $message,

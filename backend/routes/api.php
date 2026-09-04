@@ -41,7 +41,15 @@ Route::get('/posts/{id}', [\App\Http\Controllers\PostController::class, 'show'])
 Route::put('/posts/{id}', [\App\Http\Controllers\PostController::class, 'update']);
 Route::delete('/posts/{id}', [\App\Http\Controllers\PostController::class, 'destroy']);
 Route::post('/posts/{id}/duplicate', [\App\Http\Controllers\PostController::class, 'duplicate']);
-Route::patch('/posts/{id}/status', [\App\Http\Controllers\PostController::class, 'updateStatus']);
+Route::post('/posts/{id}/quality-check', [\App\Http\Controllers\PostController::class, 'qualityCheck']);
+Route::post('/posts/{id}/submit-review', [\App\Http\Controllers\PostController::class, 'submitReview']);
+Route::post('/posts/{id}/approve', [\App\Http\Controllers\PostController::class, 'approve']);
+Route::post('/posts/{id}/request-changes', [\App\Http\Controllers\PostController::class, 'requestChanges']);
+Route::post('/posts/{id}/mark-ready', [\App\Http\Controllers\PostController::class, 'markReady']);
+Route::post('/posts/{id}/return-to-draft', [\App\Http\Controllers\PostController::class, 'returnToDraft']);
+Route::get('/posts/{id}/versions', [\App\Http\Controllers\PostController::class, 'versions']);
+Route::post('/posts/{id}/versions/{versionId}/restore', [\App\Http\Controllers\PostController::class, 'restoreVersion']);
+Route::get('/posts/{id}/activities', [\App\Http\Controllers\PostController::class, 'activities']);
 // Brand API
 Route::get('/brands/default', [\App\Http\Controllers\BrandController::class, 'getDefault']);
 Route::get('/brands', [\App\Http\Controllers\BrandController::class, 'index']);
@@ -52,6 +60,22 @@ Route::patch('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'upd
 Route::delete('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'destroy']);
 Route::patch('/brands/{id}/default', [\App\Http\Controllers\BrandController::class, 'setDefault']);
 Route::patch('/brands/{id}/status', [\App\Http\Controllers\BrandController::class, 'setStatus']);
+Route::get('/brands/{id}/versions', [\App\Http\Controllers\BrandController::class, 'versions']);
+Route::post('/brands/{id}/versions/{versionId}/restore', [\App\Http\Controllers\BrandController::class, 'restoreVersion']);
+
+// Brand Knowledge
+Route::get('/brands/{brandId}/knowledge', [\App\Http\Controllers\BrandKnowledgeController::class, 'index']);
+Route::post('/brands/{brandId}/knowledge', [\App\Http\Controllers\BrandKnowledgeController::class, 'store']);
+Route::get('/brands/{brandId}/knowledge/{itemId}', [\App\Http\Controllers\BrandKnowledgeController::class, 'show']);
+Route::put('/brands/{brandId}/knowledge/{itemId}', [\App\Http\Controllers\BrandKnowledgeController::class, 'update']);
+Route::delete('/brands/{brandId}/knowledge/{itemId}', [\App\Http\Controllers\BrandKnowledgeController::class, 'destroy']);
+
+// Brand Examples
+Route::get('/brands/{brandId}/examples', [\App\Http\Controllers\BrandContentExampleController::class, 'index']);
+Route::post('/brands/{brandId}/examples', [\App\Http\Controllers\BrandContentExampleController::class, 'store']);
+Route::get('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandContentExampleController::class, 'show']);
+Route::put('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandContentExampleController::class, 'update']);
+Route::delete('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandContentExampleController::class, 'destroy']);
 
 // Content Template API
 Route::get('/brands/{brandId}/templates', [\App\Http\Controllers\ContentTemplateController::class, 'index']);
@@ -62,6 +86,7 @@ Route::patch('/brands/{brandId}/templates/{templateId}', [\App\Http\Controllers\
 Route::delete('/brands/{brandId}/templates/{templateId}', [\App\Http\Controllers\ContentTemplateController::class, 'destroy']);
 Route::patch('/brands/{brandId}/templates/{templateId}/default', [\App\Http\Controllers\ContentTemplateController::class, 'setDefault']);
 Route::patch('/brands/{brandId}/templates/{templateId}/status', [\App\Http\Controllers\ContentTemplateController::class, 'setStatus']);
+Route::post('/brands/{brandId}/resolve-template', [\App\Http\Controllers\ContentTemplateController::class, 'resolveTemplate']);
 
 // Facebook Routes
 Route::prefix('facebook')->group(function () {
@@ -78,5 +103,10 @@ Route::prefix('facebook')->group(function () {
     });
 });
 
-Route::post('/posts/{post}/publish', [FacebookPublishController::class, 'publish']);
-Route::get('/posts/{post}/publication-logs', [FacebookPublishController::class, 'history']);
+Route::post('/posts/{post}/publish', [\App\Http\Controllers\FacebookPublishController::class, 'publish']);
+Route::get('/posts/{post}/publications', [\App\Http\Controllers\FacebookPublishController::class, 'history']);
+Route::get('/publications', [\App\Http\Controllers\FacebookPublishController::class, 'allHistory']);
+Route::post('/publications/{publication}/retry', [\App\Http\Controllers\FacebookPublishController::class, 'retry']);
+
+Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index']);
+Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update']);

@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Traits\BelongsToWorkspace;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Brand extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, BelongsToWorkspace;
 
     protected $fillable = [
         'name',
@@ -45,5 +46,10 @@ class Brand extends Model
     public function posts()
     {
         return $this->hasMany(Post::class);
+    }
+
+    public function workspace()
+    {
+        return $this->belongsTo(Workspace::class);
     }
 }

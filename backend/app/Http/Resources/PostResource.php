@@ -30,7 +30,16 @@ class PostResource extends JsonResource
                 return ['id' => $this->brand->id, 'name' => $this->brand->name];
             }),
             'content_template_id' => $this->content_template_id,
+            'quality_score' => $this->quality_score,
+            'quality_status' => $this->quality_status,
+            'quality_result' => $this->quality_result,
+            'content_version' => $this->content_version,
+            'review_note' => $this->review_note,
             'last_saved_at' => $this->last_saved_at ? $this->last_saved_at->toIso8601String() : null,
+            'quality_checked_at' => $this->quality_checked_at ? $this->quality_checked_at->toIso8601String() : null,
+            'submitted_for_review_at' => $this->submitted_for_review_at ? $this->submitted_for_review_at->toIso8601String() : null,
+            'approved_at' => $this->approved_at ? $this->approved_at->toIso8601String() : null,
+            'ready_at' => $this->ready_at ? $this->ready_at->toIso8601String() : null,
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];

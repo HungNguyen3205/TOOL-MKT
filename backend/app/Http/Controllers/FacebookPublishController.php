@@ -5,25 +5,20 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\FacebookPage;
-use App\Models\PublicationLog;
-use App\Services\FacebookGraphService;
+use App\Models\Publication;
+use App\Jobs\PublishFacebookTextPost;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class FacebookPublishController extends Controller
 {
-    protected $facebookService;
-
-    public function __construct(FacebookGraphService $facebookService)
-    {
-        $this->facebookService = $facebookService;
-    }
-
     public function publish(Request $request, $postId)
     {
         $request->validate([
             'facebook_page_id' => 'required|integer',
             'confirmation' => 'required|boolean|accepted',
+            'idempotency_key' => 'nullable|string|max:255'
         ]);
 
         $post = Post::findOrFail($postId);
@@ -32,7 +27,7 @@ class FacebookPublishController extends Controller
         if ($post->status !== 'ready') {
             return response()->json([
                 'success' => false,
-                'message' => 'Bài viết chưa sẵn sàng để đăng.',
+                'message' => 'Bài viết chưa sẵn sàng để đăng. Trạng thái bài viết phải là Sẵn sàng đăng.',
                 'error_code' => 'POST_NOT_READY'
             ], 422);
         }
@@ -45,103 +40,141 @@ class FacebookPublishController extends Controller
             ], 422);
         }
 
-        // Prevent duplicate / concurrent posting using a simple database lock or checking processing status
-        $isProcessing = PublicationLog::where('post_id', $post->id)
-            ->where('facebook_page_id', $page->id)
-            ->where('status', 'processing')
-            ->where('attempted_at', '>=', Carbon::now()->subMinutes(5))
-            ->exists();
+        // Generate content hash for snapshot comparison
+        $contentHash = md5($post->title . $post->content . $post->cta . implode(',', $post->hashtags ?? []));
+        
+        // Generate Idempotency Key if not provided
+        // Use a composite key based on post_id, version, page, and content hash
+        $idempotencyKey = $request->idempotency_key ?: "post_{$post->id}_v{$post->content_version}_page_{$page->id}_{$contentHash}";
 
-        if ($isProcessing) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Bài viết đang được xử lý đăng lên trang này.',
-                'error_code' => 'PUBLICATION_IN_PROGRESS'
-            ], 422);
-        }
+        // Prevent duplicate using database transaction and checking existing publication
+        $result = DB::transaction(function () use ($post, $page, $idempotencyKey, $contentHash) {
+            
+            // Check if publication already exists for this idempotency key
+            $existing = Publication::where('idempotency_key', $idempotencyKey)->first();
+            
+            if ($existing) {
+                return $existing;
+            }
 
-        // Check if already published
-        $isPublished = PublicationLog::where('post_id', $post->id)
-            ->where('facebook_page_id', $page->id)
-            ->where('status', 'success')
-            ->exists();
+            // Check if there is already a successful publication for this post/page
+            $alreadyPublished = Publication::where('post_id', $post->id)
+                ->where('facebook_page_id', $page->id)
+                ->where('status', 'published')
+                ->exists();
+                
+            if ($alreadyPublished) {
+                throw new \Exception('POST_ALREADY_PUBLISHED');
+            }
 
-        if ($isPublished) {
-            return response()->json([
+            // Create a snapshot
+            $snapshot = [
+                'post_id' => $post->id,
+                'post_version' => $post->content_version,
+                'title' => $post->title,
+                'content' => $post->content,
+                'cta' => $post->cta,
+                'hashtags' => $post->hashtags,
+                'brand_id' => $post->brand_id,
+                'quality_score' => $post->quality_score,
+                'approved_at' => $post->approved_at
+            ];
+
+            // Create new publication in queued status
+            $publication = Publication::create([
+                'post_id' => $post->id,
+                'facebook_page_id' => $page->id,
+                'platform' => 'facebook',
+                'publication_type' => 'text',
+                'status' => 'queued',
+                'content_snapshot' => $snapshot,
+                'content_hash' => $contentHash,
+                'idempotency_key' => $idempotencyKey,
+                'queued_at' => Carbon::now(),
+                // 'requested_by' => auth()->id() // Uncomment if auth is active
+            ]);
+
+            return $publication;
+        });
+
+        // If it was already published in a separate action
+        if (is_string($result) && $result === 'POST_ALREADY_PUBLISHED') {
+             return response()->json([
                 'success' => false,
                 'message' => 'Bài viết đã được đăng thành công lên trang này trước đó.',
                 'error_code' => 'POST_ALREADY_PUBLISHED'
             ], 422);
         }
 
-        // Format message
-        $message = $this->formatPostContent($post);
-
-        // Create initial processing log
-        $log = PublicationLog::create([
-            'post_id' => $post->id,
-            'facebook_page_id' => $page->id,
-            'action' => 'publish_now',
-            'status' => 'processing',
-            'request_type' => 'text',
-            'attempted_at' => Carbon::now(),
-        ]);
-
-        try {
-            // Publish to Facebook
-            $response = $this->facebookService->publishTextPost($page->page_id, $page->access_token, $message);
+        // If it was already queued/processing by another request, just return status
+        if ($result->wasRecentlyCreated) {
+            // Dispatch to Queue immediately
+            PublishFacebookTextPost::dispatch($result->id);
             
-            $fbPostId = $response['id'] ?? null;
-
-            // Update log to success
-            $log->update([
-                'status' => 'success',
-                'facebook_post_id' => $fbPostId,
-                'published_at' => Carbon::now(),
-                'http_status' => 200,
-            ]);
-
-            // Update Post
-            $post->update([
-                'published_at' => Carbon::now(),
-                'last_publication_status' => 'success',
-                'last_facebook_post_id' => $fbPostId,
-            ]);
-
             return response()->json([
                 'success' => true,
-                'message' => 'Đăng bài lên Facebook thành công.',
+                'message' => 'Bài viết đã được đưa vào hàng đợi đăng Facebook.',
                 'data' => [
-                    'post_id' => $post->id,
-                    'facebook_page' => [
-                        'id' => $page->id,
-                        'page_id' => $page->page_id,
-                        'page_name' => $page->page_name
-                    ],
-                    'publication' => $log
+                    'publication_id' => $result->id,
+                    'status' => 'queued'
                 ]
             ]);
-
-        } catch (\Exception $e) {
-            // Update log to failed
-            $log->update([
-                'status' => 'failed',
-                'error_code' => 'FACEBOOK_PUBLISH_FAILED',
-                'error_message' => $e->getMessage(),
+        } else {
+            return response()->json([
+                'success' => true,
+                'message' => 'Yêu cầu đăng bài đã được nhận trước đó.',
+                'data' => [
+                    'publication_id' => $result->id,
+                    'status' => $result->status
+                ]
             ]);
-
+        }
+    }
+    
+    public function retry(Request $request, $publicationId)
+    {
+        $publication = Publication::with('facebookPage')->findOrFail($publicationId);
+        
+        if ($publication->status !== 'failed') {
             return response()->json([
                 'success' => false,
-                'message' => 'Không thể đăng bài. Vui lòng xem chi tiết lỗi.',
-                'error_code' => 'FACEBOOK_PUBLISH_FAILED',
-                'debug' => $e->getMessage(),
-            ], 500);
+                'message' => 'Chỉ có thể thử lại các bài đăng bị lỗi.',
+                'error_code' => 'PUBLICATION_RETRY_NOT_ALLOWED'
+            ], 422);
         }
+        
+        $page = $publication->facebookPage;
+        
+        if (!$page || !$page->is_active || $page->connection_status !== 'connected') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kết nối Facebook đã hết hạn. Vui lòng kết nối lại Page trước khi thử lại.',
+                'error_code' => 'FACEBOOK_PAGE_DISCONNECTED'
+            ], 422);
+        }
+        
+        $publication->update([
+            'status' => 'queued',
+            'queued_at' => Carbon::now(),
+        ]);
+        
+        PublishFacebookTextPost::dispatch($publication->id);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Đã đưa vào hàng đợi để thử lại.',
+            'data' => [
+                'publication_id' => $publication->id,
+                'status' => 'queued'
+            ]
+        ]);
     }
 
     public function history($postId)
     {
-        $logs = PublicationLog::with('facebookPage')
+        $logs = Publication::with(['facebookPage', 'attempts' => function($query) {
+                $query->orderBy('attempt_number', 'desc');
+            }])
             ->where('post_id', $postId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -152,29 +185,17 @@ class FacebookPublishController extends Controller
         ]);
     }
 
-    protected function formatPostContent(Post $post): string
+    public function allHistory()
     {
-        $parts = [];
-        
-        if (!empty($post->title)) {
-            $parts[] = $post->title;
-        }
-        
-        if (!empty($post->content)) {
-            $parts[] = $post->content;
-        }
-        
-        if (!empty($post->cta)) {
-            $parts[] = $post->cta;
-        }
+        $logs = Publication::with(['facebookPage', 'post', 'attempts' => function($query) {
+                $query->orderBy('attempt_number', 'desc');
+            }])
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        if (!empty($post->hashtags) && is_array($post->hashtags)) {
-            $hashtags = array_map(function($tag) {
-                return str_starts_with($tag, '#') ? $tag : '#' . $tag;
-            }, $post->hashtags);
-            $parts[] = implode(' ', $hashtags);
-        }
-
-        return implode("\n\n", $parts);
+        return response()->json([
+            'success' => true,
+            'data' => $logs
+        ]);
     }
 }

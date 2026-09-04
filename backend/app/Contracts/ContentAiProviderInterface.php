@@ -7,5 +7,5 @@ use App\DTOs\ContentGenerationResult;
 
 interface ContentAiProviderInterface
 {
-    public function generate(ContentGenerationData $data): ContentGenerationResult;
+    public function generate(ContentGenerationData $data, array $promptData, bool $isRetry = false, array $retryErrors = []): ContentGenerationResult;
 }

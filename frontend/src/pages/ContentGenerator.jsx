@@ -7,6 +7,7 @@ import ResultDisplay from '../components/ResultDisplay';
 const ContentGenerator = () => {
   const [generating, setGenerating] = useState(false);
   const [results, setResults] = useState(null);
+  const [metadata, setMetadata] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
   
   const [savedPostId, setSavedPostId] = useState(null);
@@ -24,6 +25,7 @@ const ContentGenerator = () => {
       const response = await generateContent(payload);
       if (response.success && response.data) {
         setResults(response.data.versions);
+        setMetadata(response.data.metadata);
       }
     } catch (err) {
       if (err.message) {
@@ -104,6 +106,7 @@ const ContentGenerator = () => {
             {results ? (
               <ResultDisplay 
                 results={results} 
+                metadata={metadata}
                 onRegenerate={handleRegenerate} 
                 loading={generating} 
                 onSave={handleSaveVersion}

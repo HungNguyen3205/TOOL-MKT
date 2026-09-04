@@ -52,3 +52,13 @@ export const toggleTemplateStatus = async (brandId, templateId, isActive) => {
   if (!res.ok) throw await res.json();
   return res.json();
 };
+
+export const resolveTemplate = async (brandId, data) => {
+  const res = await fetch(`/api/brands/${brandId}/resolve-template`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw await res.json();
+  return res.json();
+};

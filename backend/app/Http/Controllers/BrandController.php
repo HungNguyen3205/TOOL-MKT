@@ -47,6 +47,13 @@ class BrandController extends Controller
 
         $brand = Brand::create($data);
 
+        $brand->versions()->create([
+            'version_number' => 1,
+            'snapshot' => $brand->toArray(),
+            'change_summary' => 'Created brand',
+            'created_by' => auth()->id() ?? null,
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Tạo thương hiệu thành công.',
@@ -90,7 +97,23 @@ class BrandController extends Controller
             Brand::where('id', '!=', $brand->id)->update(['is_default' => false]);
         }
 
+        $oldData = $brand->only([
+            'name', 'brand_type', 'industry', 'website', 'hotline', 'email', 'address', 'description', 
+            'products_services', 'positioning', 'unique_value_proposition', 'brand_story', 'brand_personality', 
+            'target_audience', 'tone', 'slogan', 'default_cta'
+        ]);
+
         $brand->update($data);
+
+        $newData = $brand->fresh()->only(array_keys($oldData));
+        if ($oldData !== $newData) {
+            $brand->versions()->create([
+                'version_number' => $brand->versions()->max('version_number') + 1,
+                'snapshot' => $brand->fresh()->toArray(),
+                'change_summary' => 'Updated brand profile',
+                'created_by' => auth()->id() ?? null,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -158,5 +181,37 @@ class BrandController extends Controller
             'success' => true,
             'data' => $brand ? new BrandResource($brand) : null
         ]);
+    }
+
+    public function versions($id)
+    {
+        $brand = Brand::find($id);
+        if (!$brand) return response()->json(['success' => false, 'error_code' => 'BRAND_NOT_FOUND'], 404);
+
+        $versions = $brand->versions()->latest()->get();
+        return response()->json(['success' => true, 'data' => $versions]);
+    }
+
+    public function restoreVersion($id, $versionId)
+    {
+        $brand = Brand::find($id);
+        if (!$brand) return response()->json(['success' => false, 'error_code' => 'BRAND_NOT_FOUND'], 404);
+
+        $version = $brand->versions()->find($versionId);
+        if (!$version) return response()->json(['success' => false, 'error_code' => 'BRAND_VERSION_NOT_FOUND'], 404);
+
+        $snapshot = $version->snapshot;
+        unset($snapshot['id'], $snapshot['created_at'], $snapshot['updated_at'], $snapshot['deleted_at'], $snapshot['profile_completeness']);
+
+        $brand->update($snapshot);
+
+        $brand->versions()->create([
+            'version_number' => $brand->versions()->max('version_number') + 1,
+            'snapshot' => $brand->fresh()->toArray(),
+            'change_summary' => 'Restored to version ' . $version->version_number,
+            'created_by' => auth()->id() ?? null,
+        ]);
+
+        return response()->json(['success' => true, 'message' => 'Đã khôi phục phiên bản.', 'data' => new BrandResource($brand->fresh())]);
     }
 }

@@ -23,6 +23,12 @@ class ContentTemplateResource extends JsonResource
             'example_content' => $this->example_content,
             'is_default' => $this->is_default,
             'is_active' => $this->is_active,
+            'platform' => $this->platform,
+            'content_type' => $this->content_type,
+            'default_length' => $this->default_length,
+            'default_number_of_versions' => $this->default_number_of_versions,
+            'required_fields' => $this->required_fields ?? [],
+            'usage_count' => $this->usage_count,
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
