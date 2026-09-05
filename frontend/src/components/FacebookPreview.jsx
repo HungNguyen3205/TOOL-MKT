@@ -1,6 +1,6 @@
 import React from 'react';
 
-const FacebookPreview = ({ title, content, cta, hashtags }) => {
+const FacebookPreview = ({ title, content, cta, hashtags, imageUrl }) => {
   return (
     <div className="fb-preview">
       <div className="fb-preview-header">
@@ -29,9 +29,15 @@ const FacebookPreview = ({ title, content, cta, hashtags }) => {
         )}
       </div>
       
-      <div className="fb-preview-image-placeholder">
-        <span>Ảnh bài viết (nếu có)</span>
-      </div>
+      {imageUrl ? (
+        <div className="fb-preview-image" style={{ width: '100%' }}>
+          <img src={imageUrl} alt="Post preview" style={{ width: '100%', display: 'block' }} />
+        </div>
+      ) : (
+        <div className="fb-preview-image-placeholder">
+          <span>Ảnh bài viết (nếu có)</span>
+        </div>
+      )}
       
       <div className="fb-preview-footer">
         <button>👍 Thích</button>

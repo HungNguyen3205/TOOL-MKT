@@ -5,14 +5,31 @@ import App from './App.jsx'
 import './index.css'
 import toast from 'react-hot-toast'
 
-// Override default alert
-window.alert = function(msg) {
+window.alert = function (msg) {
   if (!msg) return;
-  const lowerMsg = String(msg).toLowerCase();
-  if (lowerMsg.includes('lỗi') || lowerMsg.includes('không thể') || lowerMsg.includes('thất bại')) {
-    toast.error(msg);
+
+  const message = String(msg);
+  const lowerMsg = message.toLowerCase();
+
+  const errorKeywords = [
+    'lỗi',
+    'không thể',
+    'thất bại',
+    'không hợp lệ',
+    'invalid',
+    'validation',
+    'thiếu',
+    'hết hạn',
+  ];
+
+  const isError = errorKeywords.some(keyword =>
+    lowerMsg.includes(keyword)
+  );
+
+  if (isError) {
+    toast.error(message);
   } else {
-    toast.success(msg);
+    toast.success(message);
   }
 };
 

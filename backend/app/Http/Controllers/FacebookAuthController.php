@@ -19,39 +19,8 @@ class FacebookAuthController extends Controller
     public function getAuthUrl()
     {
         try {
-            // Mock bypass mode for local testing
-            $settings = \App\Models\Setting::where('key', 'FACEBOOK_APP_ID')->first();
-            $appId = $settings ? $settings->value : config('services.facebook.app_id');
-            
-            if ($appId === '1234567890') {
-                $sessionId = Str::random(40);
-                $mockPages = [
-                    [
-                        'id' => 'mock_page_1',
-                        'name' => 'Danava Studio Test Page',
-                        'username' => 'danavastudio',
-                        'access_token' => 'mock_token_123',
-                        'tasks' => ['CREATE_CONTENT', 'MANAGE']
-                    ],
-                    [
-                        'id' => 'mock_page_2',
-                        'name' => 'Yoga Master Test',
-                        'access_token' => 'mock_token_456',
-                        'tasks' => ['CREATE_CONTENT', 'MANAGE']
-                    ]
-                ];
-                Cache::put('fb_available_pages_' . $sessionId, $mockPages, now()->addMinutes(30));
-                
-                $frontendRedirect = config('services.facebook.frontend_redirect', env('FACEBOOK_FRONTEND_REDIRECT_URL', 'http://localhost:5173/facebook-pages'));
-                $mockUrl = $frontendRedirect . '?status=success&session_id=' . $sessionId;
-                
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'url' => $mockUrl
-                    ]
-                ]);
-            }
+            // Cấu hình đã được đẩy sang FacebookGraphService
+            // Tại đây chỉ sinh state và redirect
 
             // Generate CSRF state
             $state = Str::random(40);

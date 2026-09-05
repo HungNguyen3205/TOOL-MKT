@@ -17,7 +17,7 @@ class PostController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Post::with('brand');
+        $query = Post::with(['brand', 'media']);
 
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
@@ -79,7 +79,7 @@ class PostController extends Controller
 
     public function show($id)
     {
-        $post = Post::with('brand')->find($id);
+        $post = Post::with(['brand', 'media'])->find($id);
         if (!$post) {
             return response()->json([
                 'success' => false,
@@ -158,6 +158,47 @@ class PostController extends Controller
                 'error_code' => 'POST_DELETE_FAILED'
             ], 500);
         }
+    }
+
+    public function regenerateImage(Request $request, $id)
+    {
+        $post = Post::find($id);
+        if (!$post) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Không tìm thấy bài viết.',
+                'error_code' => 'POST_NOT_FOUND'
+            ], 404);
+        }
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'image_prompt' => 'nullable|string|max:1000',
+            'aspect_ratio' => 'nullable|string',
+            'provider' => 'nullable|string|in:gemini'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dữ liệu không hợp lệ.',
+                'error_code' => 'VALIDATION_FAILED',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        if ($request->has('image_prompt')) {
+            $post->image_prompt = $request->image_prompt;
+        }
+        $post->status = Post::STATUS_GENERATING_IMAGE;
+        $post->save();
+
+        \App\Jobs\GeneratePostImageJob::dispatch($post);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Đang tạo lại hình ảnh...',
+            'data' => $post->fresh()
+        ]);
     }
 
     public function duplicate($id, PostWorkflowService $workflow)

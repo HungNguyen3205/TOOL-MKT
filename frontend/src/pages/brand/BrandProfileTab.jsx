@@ -68,13 +68,13 @@ const BrandProfileTab = ({ brand, setBrand, isNew, onSaved }) => {
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 1));
 
   const renderStepNav = () => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid #ddd', paddingBottom: '10px' }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '10px' }}>
       {steps.map(step => (
         <div key={step.id} 
              style={{ 
                cursor: 'pointer', 
                fontWeight: currentStep === step.id ? 'bold' : 'normal',
-               color: currentStep === step.id ? 'var(--primary-color)' : '#666'
+               color: currentStep === step.id ? 'var(--primary)' : 'var(--text-muted)'
              }}
              onClick={() => setCurrentStep(step.id)}>
           {step.id}. {step.label}

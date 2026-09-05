@@ -33,7 +33,35 @@ class Post extends Model
         'last_publication_status',
         'last_facebook_post_id',
         'post_type',
+        'image_prompt',
+        'image_path',
+        'final_image_path',
+        'facebook_page_id',
+        'scheduled_at',
+        'timezone',
+        'facebook_post_id',
+        'generation_error',
+        'publish_error',
+        'retry_count',
+        'design_format',
+        'design_title',
+        'design_layout',
+        'design_visual',
+        'design_color',
+        'design_suggestion',
     ];
+
+    // Status Constants
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_GENERATING_CONTENT = 'generating_content';
+    public const STATUS_GENERATING_IMAGE = 'generating_image';
+    public const STATUS_READY = 'ready';
+    public const STATUS_SCHEDULED = 'scheduled';
+    public const STATUS_PUBLISHING = 'publishing';
+    public const STATUS_PUBLISHED = 'published';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_IMAGE_FAILED = 'image_failed';
+    public const STATUS_CANCELLED = 'cancelled';
 
     protected $casts = [
         'hashtags' => 'array',

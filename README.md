@@ -57,6 +57,12 @@ Backend sẽ hoạt động tại `http://localhost:8000`.
 
 *Kiểm tra Health API:* Mở trình duyệt hoặc Postman truy cập vào `http://localhost:8000/api/health`.
 
+### 1.5 Chạy Queue Worker (BẮT BUỘC để đăng bài Facebook)
+Hệ thống đăng bài Facebook sử dụng Queue để xử lý bất đồng bộ. Bạn **phải** chạy Worker ở một terminal riêng:
+```bash
+php artisan queue:work database --queue=facebook-publish,default --tries=3 --timeout=120
+```
+
 ### 2. Cài đặt Frontend (React)
 Mở một terminal mới và trỏ vào thư mục `frontend`:
 ```bash

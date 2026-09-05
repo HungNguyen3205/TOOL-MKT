@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { fetchBrandKnowledge, createBrandKnowledge, updateBrandKnowledge, deleteBrandKnowledge } from '../../api/brands';
 
+const categoryLabels = {
+  product: 'Sản phẩm/Dịch vụ',
+  brand: 'Thương hiệu',
+  customer: 'Khách hàng',
+  pain_point: 'Nỗi đau',
+  feature: 'Tính năng',
+  solution: 'Giải pháp',
+  integration: 'Tích hợp',
+  report: 'Báo cáo',
+  automation: 'Tự động hóa',
+  management: 'Quản trị',
+  marketing: 'Marketing',
+  service: 'Dịch vụ',
+  promotion: 'Khuyến mãi/Ưu đãi',
+  faq: 'Câu hỏi thường gặp',
+  event: 'Sự kiện',
+  other: 'Khác'
+};
+
 const BrandKnowledgeTab = ({ brandId }) => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,7 +82,7 @@ const BrandKnowledgeTab = ({ brandId }) => {
       </div>
 
       {showForm && (
-        <form onSubmit={saveItem} style={{ backgroundColor: '#f9f9f9', padding: 20, borderRadius: 8, marginBottom: 20 }}>
+        <form onSubmit={saveItem} style={{ background: 'rgba(255,255,255,0.03)', padding: 24, borderRadius: 12, marginBottom: 30, border: '1px solid var(--border)' }}>
           <h4>{formData.id ? 'Sửa kiến thức' : 'Thêm mới'}</h4>
           <div className="editor-layout">
             <div className="form-group">
@@ -74,7 +93,18 @@ const BrandKnowledgeTab = ({ brandId }) => {
               <label>Danh mục</label>
               <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}>
                 <option value="product">Sản phẩm/Dịch vụ</option>
-                <option value="promotion">Khuyến mãi/Chính sách</option>
+                <option value="brand">Thương hiệu</option>
+                <option value="customer">Khách hàng</option>
+                <option value="pain_point">Nỗi đau</option>
+                <option value="feature">Tính năng</option>
+                <option value="solution">Giải pháp</option>
+                <option value="integration">Tích hợp</option>
+                <option value="report">Báo cáo</option>
+                <option value="automation">Tự động hóa</option>
+                <option value="management">Quản trị</option>
+                <option value="marketing">Marketing</option>
+                <option value="service">Dịch vụ</option>
+                <option value="promotion">Khuyến mãi/Ưu đãi</option>
                 <option value="faq">Câu hỏi thường gặp</option>
                 <option value="event">Sự kiện</option>
                 <option value="other">Khác</option>
@@ -94,15 +124,15 @@ const BrandKnowledgeTab = ({ brandId }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
         {items.length === 0 ? <p>Chưa có kiến thức nào.</p> : items.map(item => (
-          <div key={item.id} style={{ border: '1px solid #eee', padding: 15, borderRadius: 8 }}>
+          <div key={item.id} style={{ border: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: '0 0 10px 0' }}>{item.title} <span style={{ fontSize: '12px', background: '#eee', padding: '2px 8px', borderRadius: 10 }}>{item.category}</span></h4>
+              <h4 style={{ margin: '0 0 10px 0' }}>{item.title} <span style={{ fontSize: '12px', background: 'rgba(255,255,255,0.1)', padding: '4px 10px', borderRadius: 12, marginLeft: 10, fontWeight: 'normal' }}>{categoryLabels[item.category] || item.category}</span></h4>
               <div>
                 <button onClick={() => handleEdit(item)} style={{ background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer', marginRight: 10 }}>Sửa</button>
                 <button onClick={() => handleDelete(item.id)} style={{ background: 'none', border: 'none', color: '#cc0000', cursor: 'pointer' }}>Xóa</button>
               </div>
             </div>
-            <p style={{ margin: 0, color: '#444' }}>{item.content}</p>
+            <p style={{ margin: 0, color: 'var(--text-muted)' }}>{item.content}</p>
           </div>
         ))}
       </div>

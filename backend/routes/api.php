@@ -41,6 +41,9 @@ Route::get('/posts/{id}', [\App\Http\Controllers\PostController::class, 'show'])
 Route::put('/posts/{id}', [\App\Http\Controllers\PostController::class, 'update']);
 Route::delete('/posts/{id}', [\App\Http\Controllers\PostController::class, 'destroy']);
 Route::post('/posts/{id}/duplicate', [\App\Http\Controllers\PostController::class, 'duplicate']);
+Route::post('/posts/{post}/generate-image', [\App\Http\Controllers\PostImageController::class, 'generate']);
+Route::get('/posts/{post}/image-status', [\App\Http\Controllers\PostImageController::class, 'status']);
+Route::post('/posts/{id}/regenerate-image', [\App\Http\Controllers\PostController::class, 'regenerateImage']);
 Route::post('/posts/{id}/quality-check', [\App\Http\Controllers\PostController::class, 'qualityCheck']);
 Route::post('/posts/{id}/submit-review', [\App\Http\Controllers\PostController::class, 'submitReview']);
 Route::post('/posts/{id}/approve', [\App\Http\Controllers\PostController::class, 'approve']);
@@ -101,6 +104,13 @@ Route::prefix('facebook')->group(function () {
         Route::post('/{id}/verify', [FacebookPageController::class, 'verify']);
         Route::delete('/{id}', [FacebookPageController::class, 'destroy']);
     });
+
+    // Lên lịch & Đăng bài & Sinh nội dung
+    Route::post('/posts/{post}/schedule', [\App\Http\Controllers\PostController::class, 'schedule']);
+    Route::post('/posts/{post}/generate-content', [\App\Http\Controllers\PostController::class, 'generateContent']);
+
+    // Tích hợp AI & Công cụ
+    Route::post('/posts/{post}/quality-check', [\App\Http\Controllers\ContentQualityController::class, 'check']);
 });
 
 Route::post('/posts/{post}/publish', [\App\Http\Controllers\FacebookPublishController::class, 'publish']);

@@ -18,15 +18,9 @@ class FacebookGraphService
 
     public function __construct()
     {
-        $settings = \App\Models\Setting::whereIn('key', [
-            'FACEBOOK_APP_ID', 
-            'FACEBOOK_APP_SECRET', 
-            'FACEBOOK_REDIRECT_URI'
-        ])->pluck('value', 'key');
-
-        $this->appId = $settings['FACEBOOK_APP_ID'] ?? config('services.facebook.app_id');
-        $this->appSecret = $settings['FACEBOOK_APP_SECRET'] ?? config('services.facebook.app_secret');
-        $this->redirectUri = $settings['FACEBOOK_REDIRECT_URI'] ?? config('services.facebook.redirect');
+        $this->appId = config('services.facebook.app_id');
+        $this->appSecret = config('services.facebook.app_secret');
+        $this->redirectUri = config('services.facebook.redirect');
         
         $this->graphVersion = config('services.facebook.graph_version', 'v20.0');
         $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement');
@@ -85,26 +79,28 @@ class FacebookGraphService
         return $response->json('data') ?? [];
     }
 
-    public function verifyPageToken(string $pageId, string $pageToken): array
-    {
-        // Mock bypass
-        if (strpos($pageToken, 'mock_token_') === 0) {
-            return [
-                'id' => $pageId,
-                'name' => 'Mock Page',
-                'permissions' => ['CREATE_CONTENT', 'MANAGE']
-            ];
-        }
-
-        // Try to fetch page details using its token to verify if it's still valid
-        $response = Http::timeout($this->timeout)->get("{$this->baseUrl}/{$pageId}", [
-            'access_token' => $pageToken,
-            'fields' => 'id,name,permissions',
-        ]);
+    public function verifyPageToken(
+    string $pageId,
+    string $pageToken
+    ): array {
+        $response = Http::timeout($this->timeout)
+            ->get("{$this->baseUrl}/{$pageId}", [
+                'access_token' => $pageToken,
+                'fields' => 'id,name',
+            ]);
 
         if ($response->failed()) {
-            $this->logError("Verify Page Token failed for {$pageId}", $response);
-            throw new Exception("Failed to verify page token. It might be expired or revoked.");
+            $this->logError(
+                "Verify Page Token failed for {$pageId}",
+                $response
+            );
+
+            $error = $response->json('error') ?? [];
+
+            throw new Exception(
+                $error['message'] ?? 'Page token không hợp lệ.',
+                (int) ($error['code'] ?? 0)
+            );
         }
 
         return $response->json();
@@ -112,14 +108,7 @@ class FacebookGraphService
 
     public function publishTextPost(string $pageId, string $pageToken, string $message): array
     {
-        // Mock bypass
-        if (strpos($pageToken, 'mock_token_') === 0) {
-            // Simulate processing time
-            sleep(2);
-            return [
-                'id' => $pageId . '_' . uniqid()
-            ];
-        }
+        // Use real Graph API call
 
         $response = Http::timeout($this->timeout)->post("{$this->baseUrl}/{$pageId}/feed", [
             'access_token' => $pageToken,
@@ -132,6 +121,30 @@ class FacebookGraphService
             throw new Exception($error['message'] ?? "Failed to publish post to Facebook.");
         }
 
+        return $response->json();
+    }
+
+    public function publishPhotoPost(string $pageId, string $pageToken, string $message, string $photoPath): array
+    {
+        if (!file_exists($photoPath)) {
+            throw new Exception("Image file not found: " . $photoPath);
+        }
+
+        $response = Http::timeout($this->timeout)
+            ->attach('source', file_get_contents($photoPath), basename($photoPath))
+            ->post("{$this->baseUrl}/{$pageId}/photos", [
+                'access_token' => $pageToken,
+                'message' => $message,
+            ]);
+
+        if ($response->failed()) {
+            $this->logError("Publish Photo Post failed for {$pageId}", $response);
+            $error = $response->json('error');
+            throw new Exception($error['message'] ?? "Failed to publish photo post to Facebook.");
+        }
+
+        // The response for /photos returns 'id' and 'post_id'. We usually want 'post_id'
+        // If it doesn't return 'post_id', it returns 'id' (which is the photo id).
         return $response->json();
     }
 

@@ -69,15 +69,23 @@ const FacebookPages = () => {
   };
 
   const handleConnectPage = async (sessionId, pageId) => {
-    setLoading(true);
+  setLoading(true);
+
     try {
       await connectPage(sessionId, pageId);
+
+      setAvailablePages(prev =>
+        prev.filter(page => page.id !== pageId)
+      );
+
+      await loadConnectedPages();
+
       alert('Kết nối Page thành công!');
-      // Remove from available and refresh connected
-      setAvailablePages(prev => prev.filter(p => p.id !== pageId));
-      loadConnectedPages();
     } catch (err) {
-      alert(err.message || 'Lỗi kết nối Page');
+      alert(
+        err.message ||
+        'Không thể lưu Facebook Page vào danh sách kết nối.'
+      );
     } finally {
       setLoading(false);
     }

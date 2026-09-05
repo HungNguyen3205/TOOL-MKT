@@ -67,4 +67,14 @@ return [
         'provider' => env('AI_PROVIDER', 'openai'),
         'fallback_enabled' => env('AI_FALLBACK_ENABLED', false),
     ],
+
+    'cloudflare_ai' => [
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
+        'api_token' => env('CLOUDFLARE_AI_TOKEN'),
+        'image_model' => env(
+            'CLOUDFLARE_IMAGE_MODEL',
+            '@cf/black-forest-labs/flux-1-schnell'
+        ),
+        'timeout' => (int) env('CLOUDFLARE_AI_TIMEOUT', 120),
+    ],
 ];

@@ -17,10 +17,18 @@ const PostList = () => {
 
   const statusMap = {
     draft: { label: 'Bản nháp', color: '#757575' },
+    generating_content: { label: 'Đang tạo nội dung', color: '#2196f3' },
+    generating_image: { label: 'Đang tạo ảnh', color: '#2196f3' },
+    ready: { label: 'Sẵn sàng', color: '#4caf50' },
+    scheduled: { label: 'Đã lên lịch', color: '#ff9800' },
+    publishing: { label: 'Đang đăng', color: '#ff9800' },
+    published: { label: 'Đã đăng', color: '#0d47a1' },
+    failed: { label: 'Lỗi', color: '#f44336' },
+    cancelled: { label: 'Đã hủy', color: '#757575' },
+    // Legacy states
     in_review: { label: 'Chờ duyệt', color: '#2196f3' },
     changes_requested: { label: 'Cần chỉnh sửa', color: '#f44336' },
-    approved: { label: 'Đã duyệt', color: '#9c27b0' },
-    ready: { label: 'Sẵn sàng đăng', color: '#4caf50' }
+    approved: { label: 'Đã duyệt', color: '#9c27b0' }
   };
 
   const loadPosts = useCallback(async () => {
@@ -119,60 +127,47 @@ const PostList = () => {
           <div className="empty-state">Không tìm thấy bài viết nào.</div>
         ) : (
           posts.map(post => (
-            <div key={post.id} className="post-card">
+            <div key={post.id} className="post-card" style={{ display: 'flex', flexDirection: 'column' }}>
+              {post.final_image_path ? (
+                <div style={{ height: '200px', backgroundImage: `url(http://localhost:8000/storage/${post.final_image_path})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '8px 8px 0 0', margin: '-20px -20px 15px -20px' }}></div>
+              ) : post.image_path ? (
+                <div style={{ height: '200px', backgroundImage: `url(http://localhost:8000/storage/${post.image_path})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '8px 8px 0 0', margin: '-20px -20px 15px -20px' }}></div>
+              ) : (
+                <div style={{ height: '200px', backgroundColor: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px 8px 0 0', margin: '-20px -20px 15px -20px', color: '#888' }}>Chưa có ảnh</div>
+              )}
               <h4>{post.title}</h4>
               <p className="excerpt">
-                <strong>Thương hiệu:</strong> {post.brand ? post.brand.name : 'Không có'}<br/>
-                {post.content.substring(0, 80)}...
+                <strong>Fanpage:</strong> {post.facebook_page_id || 'Chưa chọn'}<br/>
+                <strong>Ngày đăng:</strong> {post.scheduled_at ? new Date(post.scheduled_at).toLocaleString('vi-VN') : (post.published_at ? new Date(post.published_at).toLocaleString('vi-VN') : 'Chưa thiết lập')}<br/>
+                {post.content ? post.content.substring(0, 60) + '...' : 'Không có nội dung'}
               </p>
               <div className="post-meta" style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginBottom: '15px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ backgroundColor: statusMap[post.status]?.color || '#757575', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
+                  <span style={{ backgroundColor: statusMap[post.status]?.color || '#757575', color: '#fff', padding: '4px 10px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
                     {statusMap[post.status]?.label || post.status}
                   </span>
-                  <span style={{ fontSize: '0.85rem', color: '#666' }}>
-                    Phiên bản: {post.content_version || 1}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span>Chất lượng: {post.quality_score !== null ? `${post.quality_score}/100` : 'Chưa kiểm tra'}</span>
-                  <span style={{ color: '#888' }}>{new Date(post.updated_at).toLocaleDateString('vi-VN')}</span>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+              
+              <div style={{ display: 'flex', gap: '10px', marginTop: 'auto', flexWrap: 'wrap' }}>
                 <Link 
                   to={`/posts/${post.id}/edit`} 
-                  style={{ 
-                    flex: 1, textAlign: 'center', padding: '10px', backgroundColor: 'rgba(33, 150, 243, 0.1)', 
-                    color: '#2196f3', borderRadius: '8px', textDecoration: 'none', fontWeight: '500',
-                    transition: 'all 0.2s', border: '1px solid rgba(33, 150, 243, 0.3)'
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(33, 150, 243, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(33, 150, 243, 0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  style={{ flex: '1 1 45%', textAlign: 'center', padding: '8px', backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '6px', textDecoration: 'none', fontWeight: '500' }}
                 >
-                  Sửa
+                  Chỉnh sửa
                 </Link>
-                <button 
-                  onClick={() => handleDuplicate(post.id)} 
-                  style={{ 
-                    flex: 1, padding: '10px', backgroundColor: 'rgba(255, 152, 0, 0.1)', 
-                    color: '#ff9800', borderRadius: '8px', border: '1px solid rgba(255, 152, 0, 0.3)', 
-                    fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 152, 0, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(255, 152, 0, 0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
-                >
-                  Nhân bản
-                </button>
+                {post.status === 'ready' && (
+                  <>
+                    <button style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#fff3e0', color: '#f57c00', borderRadius: '6px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>Lên lịch</button>
+                    <button style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#e8f5e9', color: '#388e3c', borderRadius: '6px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>Đăng ngay</button>
+                  </>
+                )}
+                {post.status === 'scheduled' && (
+                  <button style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#ffebee', color: '#d32f2f', borderRadius: '6px', border: 'none', fontWeight: '500', cursor: 'pointer' }}>Hủy lịch</button>
+                )}
                 <button 
                   onClick={() => handleDelete(post.id, post.title)} 
-                  style={{ 
-                    flex: 1, padding: '10px', backgroundColor: 'rgba(244, 67, 54, 0.1)', 
-                    color: '#f44336', borderRadius: '8px', border: '1px solid rgba(244, 67, 54, 0.3)', 
-                    fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s'
-                  }}
-                  onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(244, 67, 54, 0.2)'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-                  onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'rgba(244, 67, 54, 0.1)'; e.currentTarget.style.transform = 'translateY(0)' }}
+                  style={{ flex: '1 1 45%', padding: '8px', backgroundColor: '#fafafa', color: '#d32f2f', borderRadius: '6px', border: '1px solid #ffcdd2', fontWeight: '500', cursor: 'pointer' }}
                 >
                   Xóa
                 </button>

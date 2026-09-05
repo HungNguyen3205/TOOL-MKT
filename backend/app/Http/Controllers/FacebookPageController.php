@@ -30,7 +30,7 @@ class FacebookPageController extends Controller
 
         $pages = Cache::get('fb_available_pages_' . $sessionId);
         
-        if (!$pages) {
+        if (is_null($pages)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Phiên làm việc đã hết hạn hoặc không hợp lệ.',
@@ -67,7 +67,7 @@ class FacebookPageController extends Controller
 
         $pages = Cache::get('fb_available_pages_' . $sessionId);
         
-        if (!$pages) {
+        if (is_null($pages)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Phiên làm việc đã hết hạn. Vui lòng kết nối lại.',
@@ -95,27 +95,38 @@ class FacebookPageController extends Controller
         }
 
         // Save or update to Database
-        $fbPage = FacebookPage::withTrashed()->updateOrCreate(
-            ['page_id' => $selectedPage['id']],
-            [
-                'page_name' => $selectedPage['name'],
-                'page_username' => $selectedPage['username'] ?? null,
-                'page_picture_url' => $selectedPage['picture']['data']['url'] ?? null,
-                'access_token' => $selectedPage['access_token'], // Will be encrypted by model cast
-                'granted_scopes' => $selectedPage['tasks'] ?? [],
-                'permissions_checked_at' => Carbon::now(),
-                'is_active' => true,
-                'connection_status' => 'connected',
-                'last_verified_at' => Carbon::now(),
-                'deleted_at' => null // Restore if it was soft deleted
-            ]
-        );
+        $fbPage = FacebookPage::withTrashed()
+    ->firstOrNew([
+        'page_id' => $selectedPage['id']
+    ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Kết nối Facebook Page thành công.',
-            'data' => $fbPage
-        ]);
+    // Khôi phục nếu Page này từng bị ngắt kết nối/xóa mềm
+    if ($fbPage->exists && $fbPage->trashed()) {
+        $fbPage->restore();
+    }
+
+    $fbPage->fill([
+        'page_name' => $selectedPage['name'],
+        'page_username' => $selectedPage['username'] ?? null,
+        'page_picture_url' =>
+            $selectedPage['picture']['data']['url'] ?? null,
+        'access_token' => $selectedPage['access_token'],
+        'granted_scopes' => $selectedPage['tasks'] ?? [],
+        'permissions_checked_at' => Carbon::now(),
+        'is_active' => true,
+        'connection_status' => 'connected',
+        'last_verified_at' => Carbon::now(),
+        'last_error_code' => null,
+        'last_error_message' => null,
+    ]);
+
+    $fbPage->save();
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Kết nối Facebook Page thành công.',
+        'data' => $fbPage->fresh(),
+    ]);
     }
 
     public function index()
@@ -137,58 +148,96 @@ class FacebookPageController extends Controller
     }
 
     public function verify($id)
-    {
-        $page = FacebookPage::findOrFail($id);
+{
+    $page = FacebookPage::findOrFail($id);
 
-        try {
-            $data = $this->facebookService->verifyPageToken($page->page_id, $page->access_token);
-            
-            // For real validation, check granted_scopes vs required
-            $tasks = $page->granted_scopes ?? [];
-            $requiredPermissions = ['CREATE_CONTENT', 'MANAGE']; // adjust to your actual required tasks
-            $missingPermissions = array_diff($requiredPermissions, $tasks);
-            
-            if (empty($missingPermissions)) {
-                $page->update([
-                    'connection_status' => 'connected',
-                    'last_verified_at' => Carbon::now(),
-                    'last_error_code' => null,
-                    'last_error_message' => null,
-                ]);
+    try {
+        // Model tự giải mã access_token bằng encrypted cast
+        $pageToken = $page->access_token;
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Token còn hiệu lực và đủ quyền.',
-                    'data' => $page
-                ]);
-            } else {
-                $page->update([
-                    'connection_status' => 'permission_missing',
-                    'last_verified_at' => Carbon::now(),
-                    'last_error_code' => 'FACEBOOK_PERMISSION_MISSING',
-                    'last_error_message' => 'Thiếu quyền: ' . implode(', ', $missingPermissions),
-                ]);
+        // Kiểm tra token bằng cách đọc thông tin Page thật
+        $data = $this->facebookService->verifyPageToken(
+            $page->page_id,
+            $pageToken
+        );
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Token hợp lệ nhưng thiếu quyền đăng bài.',
-                    'error_code' => 'FACEBOOK_PERMISSION_MISSING',
-                    'data' => $page
-                ], 403);
-            }
-        } catch (\Exception $e) {
+        // Đảm bảo token trả về đúng Page đã kết nối
+        if (
+            empty($data['id']) ||
+            (string) $data['id'] !== (string) $page->page_id
+        ) {
+            throw new \RuntimeException(
+                'Access Token không thuộc Facebook Page này.'
+            );
+        }
+
+        // Tasks chỉ dùng để tham khảo, không dùng để kết luận token hết hạn
+        $tasks = $page->granted_scopes ?? [];
+
+        if (is_string($tasks)) {
+            $tasks = json_decode($tasks, true) ?: [];
+        }
+
+        $hasCreateContent = empty($tasks)
+            || in_array('CREATE_CONTENT', $tasks, true);
+
+        $page->update([
+            'page_name' => $data['name'] ?? $page->page_name,
+            'connection_status' => 'connected',
+            'last_verified_at' => Carbon::now(),
+            'permissions_checked_at' => Carbon::now(),
+            'last_error_code' => $hasCreateContent
+                ? null
+                : 'FACEBOOK_CREATE_CONTENT_TASK_NOT_FOUND',
+            'last_error_message' => $hasCreateContent
+                ? null
+                : 'Token hợp lệ nhưng chưa tìm thấy task CREATE_CONTENT. Hãy thử đăng bài để kiểm tra quyền pages_manage_posts.',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => $hasCreateContent
+                ? 'Kết nối Facebook Page còn hiệu lực.'
+                : 'Token còn hiệu lực nhưng chưa xác nhận được task CREATE_CONTENT.',
+            'data' => $page->fresh(),
+            'meta' => [
+                'page_id_verified' => $data['id'],
+                'tasks' => $tasks,
+                'can_attempt_publish' => true,
+            ],
+        ]);
+    } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+        $page->update([
+            'connection_status' => 'error',
+            'last_verified_at' => Carbon::now(),
+            'last_error_code' => 'FACEBOOK_TOKEN_DECRYPT_FAILED',
+            'last_error_message' =>
+                'Không giải mã được token. APP_KEY có thể đã bị thay đổi.',
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' =>
+                'Không giải mã được Page Token. Hãy ngắt kết nối và kết nối lại Page.',
+            'error_code' => 'FACEBOOK_TOKEN_DECRYPT_FAILED',
+            'data' => $page->fresh(),
+        ], 422);
+        } catch (\Throwable $e) {
             $page->update([
-                'connection_status' => 'token_expired',
-                'last_error_code' => 'FACEBOOK_TOKEN_INVALID',
-                'last_error_message' => $e->getMessage(),
+                'connection_status' => 'error',
                 'last_verified_at' => Carbon::now(),
+                'last_error_code' => 'FACEBOOK_VERIFY_FAILED',
+                'last_error_message' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Token đã hết hạn hoặc không hợp lệ.',
-                'error_code' => 'FACEBOOK_TOKEN_INVALID',
-                'data' => $page
+                'message' => 'Không thể xác minh kết nối Facebook Page.',
+                'error_code' => 'FACEBOOK_VERIFY_FAILED',
+                'debug' => config('app.debug')
+                    ? $e->getMessage()
+                    : null,
+                'data' => $page->fresh(),
             ], 400);
         }
     }

@@ -63,7 +63,7 @@ const BrandExamplesTab = ({ brandId }) => {
       </div>
 
       {showForm && (
-        <form onSubmit={saveItem} style={{ backgroundColor: '#f9f9f9', padding: 20, borderRadius: 8, marginBottom: 20 }}>
+        <form onSubmit={saveItem} style={{ background: 'rgba(255,255,255,0.03)', padding: 24, borderRadius: 12, marginBottom: 30, border: '1px solid var(--border)' }}>
           <h4>{formData.id ? 'Sửa bài mẫu' : 'Thêm mới'}</h4>
           <div className="editor-layout">
             <div className="form-group">
@@ -95,9 +95,9 @@ const BrandExamplesTab = ({ brandId }) => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 15 }}>
         {items.length === 0 ? <p>Chưa có bài mẫu nào.</p> : items.map(item => (
-          <div key={item.id} style={{ border: item.example_type === 'good' ? '1px solid #4CAF50' : '1px solid #F44336', padding: 15, borderRadius: 8 }}>
+          <div key={item.id} style={{ border: item.example_type === 'good' ? '1px solid rgba(76, 175, 80, 0.4)' : '1px solid rgba(244, 67, 54, 0.4)', background: 'rgba(255,255,255,0.02)', padding: 20, borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: '0 0 10px 0', color: item.example_type === 'good' ? '#2e7d32' : '#c62828' }}>
+              <h4 style={{ margin: '0 0 10px 0', color: item.example_type === 'good' ? '#81c784' : '#e57373' }}>
                 {item.example_type === 'good' ? '✅' : '❌'} {item.title}
               </h4>
               <div>
@@ -105,11 +105,11 @@ const BrandExamplesTab = ({ brandId }) => {
                 <button onClick={() => handleDelete(item.id)} style={{ background: 'none', border: 'none', color: '#cc0000', cursor: 'pointer' }}>Xóa</button>
               </div>
             </div>
-            <pre style={{ margin: '10px 0', padding: 10, background: '#f5f5f5', whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '14px' }}>
+            <pre style={{ margin: '10px 0', padding: 15, background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', borderRadius: 8, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: '14px', color: 'var(--text)' }}>
               {item.content}
             </pre>
             {item.explanation && (
-              <p style={{ margin: 0, color: '#666', fontStyle: 'italic' }}>* Giải thích: {item.explanation}</p>
+              <p style={{ margin: 0, color: 'var(--text-muted)', fontStyle: 'italic' }}>* Giải thích: {item.explanation}</p>
             )}
           </div>
         ))}

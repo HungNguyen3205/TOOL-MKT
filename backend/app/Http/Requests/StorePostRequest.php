@@ -25,11 +25,18 @@ class StorePostRequest extends FormRequest
             'tone' => 'nullable|in:professional,friendly,youthful,humorous,luxurious,inspirational',
             'content_length' => 'nullable|in:short,medium,long',
             'source' => 'required|in:manual,ai_generated,ai_edited',
-            'status' => 'required|in:draft,ready',
+            'status' => 'required|in:draft,in_review,changes_requested,approved,ready,generating_content,generating_image,scheduled,publishing,published,failed,image_failed,cancelled',
             'ai_model' => 'nullable|string|max:255',
             'ai_provider' => 'nullable|string|max:100',
             'selected_version' => 'nullable|integer|min:1|max:5',
             'source_input' => 'nullable|array',
+            'design_format' => 'nullable|string|max:255',
+            'design_title' => 'nullable|string|max:255',
+            'design_layout' => 'nullable|string|max:255',
+            'design_visual' => 'nullable|string|max:255',
+            'design_color' => 'nullable|string|max:255',
+            'design_suggestion' => 'nullable|string',
+            'image_prompt' => 'nullable|string|max:5000',
         ];
     }
 

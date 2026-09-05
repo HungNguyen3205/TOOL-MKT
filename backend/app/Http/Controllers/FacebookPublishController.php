@@ -10,9 +10,17 @@ use App\Jobs\PublishFacebookTextPost;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Services\FacebookGraphService;
 
 class FacebookPublishController extends Controller
 {
+    protected $facebookService;
+
+    public function __construct(FacebookGraphService $facebookService)
+    {
+        $this->facebookService = $facebookService;
+    }
+
     public function publish(Request $request, $postId)
     {
         $request->validate([
@@ -37,6 +45,24 @@ class FacebookPublishController extends Controller
                 'success' => false,
                 'message' => 'Facebook Page không khả dụng hoặc đã mất kết nối.',
                 'error_code' => 'FACEBOOK_PAGE_NOT_AVAILABLE'
+            ], 422);
+        }
+
+        // Kiểm tra token Page bằng endpoint phù hợp trước khi cho đăng.
+        try {
+            $this->facebookService->verifyPageToken($page->page_id, $page->access_token);
+        } catch (\Exception $e) {
+            $page->update([
+                'connection_status' => 'token_expired',
+                'last_error_code' => 'FACEBOOK_TOKEN_INVALID',
+                'last_error_message' => $e->getMessage(),
+                'last_verified_at' => Carbon::now(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Token đã hết hạn hoặc không hợp lệ. Vui lòng kết nối lại.',
+                'error_code' => 'FACEBOOK_TOKEN_INVALID'
             ], 422);
         }
 

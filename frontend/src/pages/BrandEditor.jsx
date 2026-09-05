@@ -90,7 +90,7 @@ const BrandEditor = () => {
                  cursor: tab.disabled ? 'not-allowed' : 'pointer',
                  borderBottom: activeTab === tab.id ? '3px solid var(--primary-color)' : '3px solid transparent',
                  fontWeight: activeTab === tab.id ? 'bold' : 'normal',
-                 color: tab.disabled ? '#aaa' : (activeTab === tab.id ? 'var(--primary-color)' : '#333')
+                 color: tab.disabled ? 'var(--text-muted)' : (activeTab === tab.id ? 'var(--primary)' : 'var(--text-main)')
                }}
                onClick={() => !tab.disabled && setActiveTab(tab.id)}>
             {tab.label}
@@ -98,7 +98,7 @@ const BrandEditor = () => {
         ))}
       </div>
 
-      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+      <div style={{ backgroundColor: 'var(--surface)', padding: '30px', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow)', border: '1px solid var(--border)' }}>
         {activeTab === 'profile' && (
           <BrandProfileTab 
             brand={brand} 

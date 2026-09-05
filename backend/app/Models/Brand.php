@@ -15,9 +15,22 @@ class Brand extends Model
         'name',
         'slug',
         'industry',
+        'brand_type',
+        'website',
+        'hotline',
+        'email',
+        'address',
         'description',
         'products_services',
+        'positioning',
+        'unique_value_proposition',
+        'brand_story',
+        'brand_personality',
         'target_audience',
+        'competitive_advantages',
+        'customer_pain_points',
+        'customer_desires',
+        'customer_objections',
         'tone',
         'slogan',
         'default_cta',
@@ -25,6 +38,11 @@ class Brand extends Model
         'required_keywords',
         'prohibited_terms',
         'writing_rules',
+        'default_language',
+        'emoji_limit',
+        'preferred_addressing',
+        'platform_rules',
+        'profile_completeness',
         'is_default',
         'is_active',
     ];
@@ -34,6 +52,12 @@ class Brand extends Model
         'required_keywords' => 'array',
         'prohibited_terms' => 'array',
         'writing_rules' => 'array',
+        'service_areas' => 'array',
+        'competitive_advantages' => 'array',
+        'customer_pain_points' => 'array',
+        'customer_desires' => 'array',
+        'customer_objections' => 'array',
+        'platform_rules' => 'array',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
     ];
@@ -51,5 +75,19 @@ class Brand extends Model
     public function workspace()
     {
         return $this->belongsTo(Workspace::class);
+    }
+    public function knowledgeItems()
+    {
+        return $this->hasMany(BrandKnowledgeItem::class);
+    }
+
+    public function contentExamples()
+    {
+        return $this->hasMany(BrandContentExample::class);
+    }
+
+    public function versions()
+    {
+        return $this->hasMany(BrandVersion::class);
     }
 }

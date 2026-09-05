@@ -72,6 +72,33 @@ export const duplicatePost = async (id) => {
   return data;
 };
 
+export const generatePostImage = async (id, payload = {}) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/generate-image`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
+export const fetchPostImageStatus = async (id) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/image-status`, {
+    headers: {
+      Accept: 'application/json',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
 export const qualityCheckPost = async (id) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const response = await fetch(`${baseUrl}/posts/${id}/quality-check`, {

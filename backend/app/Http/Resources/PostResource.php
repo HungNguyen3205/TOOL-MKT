@@ -42,6 +42,30 @@ class PostResource extends JsonResource
             'ready_at' => $this->ready_at ? $this->ready_at->toIso8601String() : null,
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
+            'media' => $this->whenLoaded('media', function () {
+                return $this->media->map(function ($media) {
+                    return [
+                        'id' => $media->id,
+                        'type' => $media->type,
+                        'status' => $media->status,
+                        'url' => url(\Illuminate\Support\Facades\Storage::disk($media->disk)->url($media->path)),
+                        'role' => $media->pivot?->role,
+                        'position' => $media->pivot?->position,
+                        'width' => $media->width,
+                        'height' => $media->height,
+                    ];
+                })->values();
+            }),
+            'image_url' => $this->whenLoaded('media', function () {
+                $image = $this->media
+                    ->where('type', 'image')
+                    ->where('status', 'ready')
+                    ->first(fn ($item) => $item->pivot?->role === 'primary');
+
+                return $image
+                    ? url(\Illuminate\Support\Facades\Storage::disk($image->disk)->url($image->path))
+                    : null;
+            }),
         ];
     }
 }

@@ -100,7 +100,10 @@ class BrandController extends Controller
         $oldData = $brand->only([
             'name', 'brand_type', 'industry', 'website', 'hotline', 'email', 'address', 'description', 
             'products_services', 'positioning', 'unique_value_proposition', 'brand_story', 'brand_personality', 
-            'target_audience', 'tone', 'slogan', 'default_cta'
+            'target_audience', 'tone', 'slogan', 'default_cta', 'service_areas', 'competitive_advantages',
+            'customer_pain_points', 'customer_desires', 'customer_objections', 'default_language', 'emoji_limit',
+            'preferred_addressing', 'platform_rules', 'default_hashtags', 'required_keywords', 'prohibited_terms',
+            'writing_rules'
         ]);
 
         $brand->update($data);

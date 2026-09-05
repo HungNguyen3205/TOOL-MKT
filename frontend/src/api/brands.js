@@ -20,7 +20,7 @@ export const fetchBrand = async (id) => {
 export const createBrand = async (data) => {
   const res = await fetch('/api/brands', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw await res.json();
@@ -30,7 +30,7 @@ export const createBrand = async (data) => {
 export const updateBrand = async (id, data) => {
   const res = await fetch(`/api/brands/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(data),
   });
   if (!res.ok) throw await res.json();
