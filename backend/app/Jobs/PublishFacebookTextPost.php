@@ -123,6 +123,7 @@ class PublishFacebookTextPost implements ShouldQueue
             // Update original post status if needed
             if ($publication->post) {
                 $publication->post->update([
+                    'status' => 'published',
                     'published_at' => Carbon::now(),
                     'last_publication_status' => 'success',
                     'last_facebook_post_id' => $result['external_post_id'],
@@ -172,6 +173,7 @@ class PublishFacebookTextPost implements ShouldQueue
 
         if ($publication->post) {
             $publication->post->update([
+                'status' => 'failed',
                 'last_publication_status' => 'failed',
             ]);
         }

@@ -41,7 +41,7 @@ export const disconnectPage = async (id) => {
 export const publishPost = async (postId, payload) => {
   const res = await fetch(`/api/posts/${postId}/publish`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(payload),
   });
   if (!res.ok) throw await res.json();

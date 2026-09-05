@@ -89,6 +89,15 @@ class GeneratePostImageJob implements ShouldQueue
                 throw new \Exception("IMAGE_DECODE_FAILED: File is not a valid image");
             }
 
+            // Overlay brand info
+            $overlayService = app(\App\Services\ImageOverlayService::class);
+            $brand = $post->brand ?? null;
+            if ($brand) {
+                $overlayService->overlayBrandInfo($path, $brand, $post->title ?? '');
+                // Reload size after overlay (might not change, but just to be safe if we change logic later)
+                $imageSize = @getimagesize($fullPath);
+            }
+
             DB::transaction(function () use ($post, $mediaAsset, $path, $mimeType, $extension, $fullPath, $imageSize, $result) {
                 // Update media asset
                 $metadata = $mediaAsset->metadata ?? [];
@@ -114,11 +123,11 @@ class GeneratePostImageJob implements ShouldQueue
                 $isRegenerate = $metadata['regenerate'] ?? false;
                 
                 if ($isRegenerate) {
-                    // Archive existing primary images
-                    $post->media()->wherePivot('role', 'primary')->updateExistingPivot(
-                        $post->media()->wherePivot('role', 'primary')->pluck('media_assets.id')->toArray(),
-                        ['role' => 'archive']
-                    );
+                    // Archive existing primary images properly by looping over IDs
+                    $primaryIds = $post->media()->wherePivot('role', 'primary')->pluck('media_assets.id');
+                    foreach ($primaryIds as $pid) {
+                        $post->media()->updateExistingPivot($pid, ['role' => 'archive']);
+                    }
                 }
                 
                 // Attach new image as primary

@@ -54,8 +54,8 @@ class ContentGenerationService
 
         $dto = ContentGenerationData::fromArray($data, $brand, $template);
 
-        $providerName = config('services.ai.provider', 'openai');
-        $fallbackEnabled = filter_var(config('services.ai.fallback_enabled', false), FILTER_VALIDATE_BOOLEAN);
+        $providerName = config('services.ai.text_provider', 'gemini');
+        $fallbackEnabled = filter_var(config('services.ai.text_fallback_enabled', false), FILTER_VALIDATE_BOOLEAN);
 
         $primaryProvider = $this->getProviderInstance($providerName);
 
@@ -285,8 +285,9 @@ class ContentGenerationService
     {
         return match (strtolower($name)) {
             'openai' => new OpenAiContentProvider(),
+            'gemini' => new \App\Providers\AiProvider\GeminiContentProvider(),
             'ollama' => new OllamaContentProvider(),
-            default => new OpenAiContentProvider(),
+            default => new \App\Providers\AiProvider\GeminiContentProvider(),
         };
     }
 

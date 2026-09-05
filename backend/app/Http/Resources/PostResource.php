@@ -63,7 +63,7 @@ class PostResource extends JsonResource
                     ->first(fn ($item) => $item->pivot?->role === 'primary');
 
                 return $image
-                    ? url(\Illuminate\Support\Facades\Storage::disk($image->disk)->url($image->path))
+                    ? url(\Illuminate\Support\Facades\Storage::disk($image->disk)->url($image->path)) . '?t=' . time()
                     : null;
             }),
         ];

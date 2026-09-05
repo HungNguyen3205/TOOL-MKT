@@ -5,7 +5,7 @@ import {
   qualityCheckPost, submitReviewPost, approvePost, requestChangesPost, markReadyPost, returnToDraftPost,
   fetchPostVersions, restorePostVersion, fetchPostActivities, generatePostImage, fetchPostImageStatus
 } from '../api/posts';
-import { getPublications } from '../api/facebook';
+import { getPublications, getConnectedPages } from '../api/facebook';
 import FacebookPreview from '../components/FacebookPreview';
 import toast from 'react-hot-toast';
 
@@ -41,6 +41,7 @@ const PostEditor = () => {
   const [activities, setActivities] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [showAdvancedPrompt, setShowAdvancedPrompt] = useState(false);
+  const [facebookPages, setFacebookPages] = useState([]);
   
   const [post, setPost] = useState({
     title: '',
@@ -55,7 +56,8 @@ const PostEditor = () => {
     quality_score: null,
     quality_status: 'unchecked',
     quality_result: null,
-    content_version: 1
+    content_version: 1,
+    facebook_page_id: ''
   });
 
   const isDirty = useRef(false);
@@ -80,11 +82,21 @@ const PostEditor = () => {
   };
 
   useEffect(() => {
+    loadFacebookPages();
     if (!isNew) {
       loadPost(id);
       loadFacebookLogs(id);
     }
   }, [id, isNew]);
+
+  const loadFacebookPages = async () => {
+    try {
+      const res = await getConnectedPages();
+      setFacebookPages(res.data || []);
+    } catch (err) {
+      console.error('Failed to load facebook pages', err);
+    }
+  };
 
   useEffect(() => {
     if (post.status === 'generating_image') {
@@ -227,6 +239,7 @@ const PostEditor = () => {
       typeof post.source_input === 'object'
         ? post.source_input
         : null,
+    facebook_page_id: post.facebook_page_id || null,
   });
 
   const savePost = async (isAutosave = false) => {
@@ -302,6 +315,9 @@ const PostEditor = () => {
   };
 
   const handleSchedulePost = async () => {
+    if (!post.facebook_page_id) {
+      toast.error("Vui lòng chọn Fanpage để đăng bài."); return;
+    }
     if (!scheduleData.date || !scheduleData.time) {
       toast.error("Vui lòng chọn ngày và giờ."); return;
     }
@@ -311,7 +327,7 @@ const PostEditor = () => {
     }
     setSaving(true);
     try {
-      await updatePost(currentPostId.current, { scheduled_at: scheduleDatetime, status: 'scheduled' });
+      await updatePost(currentPostId.current, { ...buildPayload(), scheduled_at: scheduleDatetime, status: 'scheduled' });
       toast.success("Đã lên lịch thành công.");
       setShowScheduleModal(false);
       await loadPost(currentPostId.current);
@@ -500,7 +516,7 @@ const PostEditor = () => {
             {statusMap[post.status]?.label}
           </span>
         </div>
-        <div className="header-actions">
+        <div className="header-actions" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
           <span className="save-status">{saveStatus}</span>
           
           {!isNew && (
@@ -511,17 +527,17 @@ const PostEditor = () => {
 
           {['draft', 'image_failed', 'changes_requested'].includes(post.status) && (
             <>
+              <button className="btn-secondary" onClick={handleQualityCheck} disabled={checking || saving}>
+                {checking ? 'Đang kiểm tra...' : 'Kiểm tra chất lượng'}
+              </button>
               <button className="btn-primary" onClick={() => savePost(false)} disabled={saving}>
                 {saving ? 'Đang lưu...' : 'Lưu bản nháp'}
               </button>
               <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(217, 70, 239, 0.4)', fontWeight: 'bold' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: 'generating_content' }), "Đang tạo nội dung và hình ảnh...")} disabled={saving}>
                 ✨ Tạo nội dung & hình ảnh
               </button>
-              <button className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', transition: 'all 0.3s' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: 'generating_content' }), "Đang tạo lại nội dung...")} disabled={saving}>
-                📝 Tạo lại nội dung
-              </button>
-              <button className="btn-secondary" style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.3)', transition: 'all 0.3s' }} onClick={handleRegenerateImage} disabled={saving}>
-                🎨 Tạo lại hình ảnh
+              <button className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', transition: 'all 0.3s' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: post.status === 'ready' ? 'draft' : 'ready' }), "Đã thay đổi trạng thái")} disabled={saving}>
+                🔄 Thay đổi trạng thái bài đăng
               </button>
             </>
           )}
@@ -533,12 +549,6 @@ const PostEditor = () => {
           {post.status === 'ready' && (
             <>
               <button className="btn-secondary" onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { status: 'draft' }), "Đã đưa về bản nháp")}>Sửa lại</button>
-              <button className="btn-primary" style={{ backgroundColor: '#ff9800' }} onClick={() => setShowScheduleModal(true)}>
-                Lên lịch đăng
-              </button>
-              <button className="btn-success" onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { status: 'publishing' }), "Đang tiến hành đăng...")}>
-                Đăng ngay
-              </button>
             </>
           )}
 
@@ -595,6 +605,8 @@ const PostEditor = () => {
               )}
             </div>
           )}
+
+
 
           <div className="form-group">
             <label>Tiêu đề *</label>

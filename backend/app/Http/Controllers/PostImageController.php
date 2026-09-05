@@ -24,11 +24,21 @@ class PostImageController extends Controller
             ->exists();
 
         if ($isProcessing) {
-            return response()->json([
-                'success' => false,
-                'error_code' => 'IMAGE_GENERATION_IN_PROGRESS',
-                'message' => 'An image is already being generated for this post.'
-            ], 409);
+            if ($request->input('regenerate')) {
+                // Hủy các ảnh đang bị kẹt ở trạng thái processing
+                MediaAsset::whereHas('posts', function($q) use ($post) {
+                    $q->where('posts.id', $post->id);
+                })
+                ->where('type', 'image')
+                ->where('status', 'processing')
+                ->update(['status' => 'cancelled']);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'error_code' => 'IMAGE_GENERATION_IN_PROGRESS',
+                    'message' => 'An image is already being generated for this post.'
+                ], 409);
+            }
         }
 
         $prompt = $request->input('prompt');
@@ -53,9 +63,15 @@ class PostImageController extends Controller
             'size_bytes' => 0,
             'checksum' => 'pending',
             'metadata' => [
-                'provider' => 'cloudflare',
+                'provider' => 'pollinations',
                 'regenerate' => $request->input('regenerate', false)
             ]
+        ]);
+
+        // Attach ngay vào post_media với role processing để frontend theo dõi
+        $post->media()->attach($mediaAsset->id, [
+            'role' => 'processing',
+            'position' => 0
         ]);
 
         GeneratePostImageJob::dispatch($post->id, $mediaAsset->id, $prompt)->onQueue('image-generation');
@@ -101,7 +117,7 @@ class PostImageController extends Controller
             'data' => [
                 'status' => $latestMedia->status,
                 'image_url' => $latestMedia->status === 'ready' && $latestMedia->path 
-                                ? url(Storage::disk($latestMedia->disk)->url($latestMedia->path)) 
+                                ? url(Storage::disk($latestMedia->disk)->url($latestMedia->path)) . '?t=' . time()
                                 : null,
                 'error_code' => $latestMedia->metadata['error_code'] ?? null,
                 'error_message' => $latestMedia->metadata['error_message'] ?? null
