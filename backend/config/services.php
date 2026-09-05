@@ -33,29 +33,6 @@ return [
         'timeout' => env('FACEBOOK_HTTP_TIMEOUT', 30),
     ],
 
-    'openai' => [
-        'api_key' => env('OPENAI_API_KEY'),
-        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
-        'timeout' => env('OPENAI_TIMEOUT', 60),
-        'max_output_tokens' => env('OPENAI_MAX_OUTPUT_TOKENS', 2500),
-        'models_pricing' => [
-            'gpt-4o-mini' => [
-                'input' => 0.00015, // per 1k tokens
-                'output' => 0.0006, // per 1k tokens
-            ],
-            'gpt-3.5-turbo' => [
-                'input' => 0.0005,
-                'output' => 0.0015,
-            ]
-        ],
-    ],
-
-    'ollama' => [
-        'base_url' => env('OLLAMA_BASE_URL', 'http://localhost:11434'),
-        'model' => env('OLLAMA_MODEL', 'qwen2.5:3b'),
-        'timeout' => env('OLLAMA_TIMEOUT', 120),
-    ],
-
     'ai_quality' => [
         'pass_score' => env('CONTENT_QUALITY_PASS_SCORE', 80),
         'warning_score' => env('CONTENT_QUALITY_WARNING_SCORE', 60),
@@ -64,17 +41,26 @@ return [
     ],
 
     'ai' => [
-        'provider' => env('AI_PROVIDER', 'openai'),
-        'fallback_enabled' => env('AI_FALLBACK_ENABLED', false),
+        'text_provider' => env('AI_TEXT_PROVIDER', 'gemini'),
+        'image_provider' => env('AI_IMAGE_PROVIDER', 'pollinations'),
+        'text_fallback_enabled' => env('AI_FALLBACK_ENABLED', false),
+        'image_fallback_enabled' => env('IMAGE_FALLBACK_ENABLED', false),
     ],
 
-    'cloudflare_ai' => [
-        'account_id' => env('CLOUDFLARE_ACCOUNT_ID'),
-        'api_token' => env('CLOUDFLARE_AI_TOKEN'),
-        'image_model' => env(
-            'CLOUDFLARE_IMAGE_MODEL',
-            '@cf/black-forest-labs/flux-1-schnell'
-        ),
-        'timeout' => (int) env('CLOUDFLARE_AI_TIMEOUT', 120),
+    'gemini' => [
+        'api_key' => env('GEMINI_API_KEY'),
+        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-3.5-flash-lite'),
+        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+        'timeout' => env('GEMINI_TIMEOUT', 60),
+        'max_output_tokens' => env('GEMINI_MAX_OUTPUT_TOKENS', 800),
+    ],
+
+    'pollinations' => [
+        'api_key' => env('POLLINATIONS_API_KEY'),
+        'base_url' => env('POLLINATIONS_BASE_URL', 'https://gen.pollinations.ai'),
+        'image_model' => env('POLLINATIONS_IMAGE_MODEL', 'flux'),
+        'image_size' => env('POLLINATIONS_IMAGE_SIZE', '1024x1024'),
+        'image_quality' => env('POLLINATIONS_IMAGE_QUALITY', 'low'),
+        'timeout' => env('POLLINATIONS_TIMEOUT', 180),
     ],
 ];
