@@ -32,52 +32,110 @@ class PollinationsImageProvider implements ImageGenerationProviderInterface
         if (empty($prompt)) {
             return [
                 'success' => false,
-                'error_message' => 'Prompt cannot be empty.',
-                'error_code' => 'EMPTY_PROMPT'
+                'error_code' => 'EMPTY_PROMPT',
+                'error_message' => 'Prompt cannot be empty.'
             ];
         }
 
         try {
-            $encodedPrompt = urlencode($prompt);
-            $sizeParts = explode('x', $this->size);
-            $width = $sizeParts[0] ?? 1024;
-            $height = $sizeParts[1] ?? 1024;
-            $seed = rand(1, 999999999);
-            
-            // Sử dụng endpoint GET ổn định nhất của Pollinations
-            $url = "https://image.pollinations.ai/prompt/{$encodedPrompt}?width={$width}&height={$height}&seed={$seed}&nologo=true";
-
-            $response = Http::timeout($this->timeout)->get($url);
+            $response = Http::withToken($this->apiKey)
+                ->acceptJson()
+                ->asJson()
+                ->connectTimeout(15)
+                ->timeout($this->timeout)
+                ->post(rtrim($this->baseUrl, '/') . '/v1/images/generations', [
+                    'prompt' => $prompt,
+                    'model' => $this->model,
+                    'n' => 1,
+                    'size' => $this->size,
+                    'quality' => $this->quality,
+                    'response_format' => 'b64_json',
+                ]);
 
             if ($response->failed()) {
                 $status = $response->status();
+                $body = $response->body();
+                
+                $errorCode = 'POLLINATIONS_API_ERROR';
+                $errorMessage = 'Lỗi từ Pollinations: ' . $body;
+
+                if ($status === 401) {
+                    $errorCode = 'POLLINATIONS_UNAUTHORIZED';
+                    $errorMessage = 'API key thiếu hoặc không hợp lệ.';
+                } elseif ($status === 402) {
+                    $errorCode = 'POLLINATIONS_PAYMENT_REQUIRED';
+                    $errorMessage = 'Hết Pollen hoặc hết ngân sách của key.';
+                } elseif ($status === 403) {
+                    $errorCode = 'POLLINATIONS_FORBIDDEN';
+                    $errorMessage = 'Key không có quyền dùng model này.';
+                } elseif ($status === 429) {
+                    $errorCode = 'POLLINATIONS_RATE_LIMIT';
+                    $errorMessage = 'Vượt giới hạn request (Rate limit).';
+                } elseif ($status >= 500) {
+                    $errorCode = 'POLLINATIONS_SERVER_ERROR';
+                    $errorMessage = 'Pollinations tạm thời lỗi hệ thống (5xx).';
+                }
+
                 return [
                     'success' => false,
-                    'error_code' => 'POLLINATIONS_API_ERROR',
-                    'error_message' => "Lỗi từ Pollinations (HTTP {$status})"
+                    'error_code' => $errorCode,
+                    'error_message' => $errorMessage,
+                    'http_status' => $status,
+                    'metadata' => [
+                        'provider' => 'pollinations',
+                        'model' => $this->model,
+                        'http_status' => $status
+                    ]
                 ];
             }
 
-            $imageData = $response->body();
+            $b64Json = $response->json('data.0.b64_json');
 
-            if (empty($imageData)) {
+            if (empty($b64Json)) {
                 return [
                     'success' => false,
                     'error_code' => 'POLLINATIONS_INVALID_RESPONSE',
-                    'error_message' => 'Dữ liệu trả về không có ảnh.'
+                    'error_message' => 'Response không chứa ảnh hợp lệ (thiếu b64_json).'
+                ];
+            }
+
+            $imageData = base64_decode($b64Json, true);
+
+            if ($imageData === false || empty($imageData)) {
+                return [
+                    'success' => false,
+                    'error_code' => 'POLLINATIONS_INVALID_RESPONSE',
+                    'error_message' => 'Base64 decode thất bại hoặc dữ liệu rỗng.'
+                ];
+            }
+            
+            // Validate MIME TYPE (not just JSON error)
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->buffer($imageData);
+            
+            if (!in_array($mimeType, ['image/jpeg', 'image/png', 'image/webp'])) {
+                return [
+                    'success' => false,
+                    'error_code' => 'POLLINATIONS_INVALID_RESPONSE',
+                    'error_message' => 'Dữ liệu không phải là định dạng ảnh hợp lệ (MIME: ' . $mimeType . ').'
                 ];
             }
 
             return [
                 'success' => true,
-                'image_data' => $imageData
+                'image_data' => $imageData,
+                'metadata' => [
+                    'provider' => 'pollinations',
+                    'model' => $this->model,
+                    'http_status' => $response->status()
+                ]
             ];
 
         } catch (ConnectionException $e) {
             return [
                 'success' => false,
                 'error_code' => 'POLLINATIONS_TIMEOUT',
-                'error_message' => 'Quá thời gian kết nối (Timeout).'
+                'error_message' => 'Quá thời gian kết nối (Timeout) tới Pollinations.'
             ];
         } catch (\Exception $e) {
             Log::error('PollinationsImageProvider generate failed: ' . $e->getMessage());
@@ -91,6 +149,60 @@ class PollinationsImageProvider implements ImageGenerationProviderInterface
 
     public function verifyConnection(): array
     {
-        return ['status' => true, 'message' => 'Pollinations ready'];
+        try {
+            // Test with a tiny prompt to verify authentication and model
+            $response = Http::withToken($this->apiKey)
+                ->acceptJson()
+                ->asJson()
+                ->connectTimeout(10)
+                ->timeout(30)
+                ->post(rtrim($this->baseUrl, '/') . '/v1/images/generations', [
+                    'prompt' => 'test connection',
+                    'model' => $this->model,
+                    'n' => 1,
+                    'size' => '256x256',
+                    'quality' => 'low',
+                    'response_format' => 'url', // just request URL to save payload size
+                ]);
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'provider' => 'pollinations',
+                    'model' => $this->model,
+                    'message' => 'Kết nối Pollinations thành công'
+                ];
+            }
+
+            $status = $response->status();
+            $msg = 'Lỗi kết nối';
+            if ($status === 401) $msg = 'API key thiếu hoặc không hợp lệ.';
+            if ($status === 402) $msg = 'Hết Pollen hoặc hết ngân sách.';
+            if ($status === 403) $msg = 'Key không có quyền dùng model này.';
+            if ($status === 429) $msg = 'Vượt giới hạn request (Rate limit).';
+            
+            return [
+                'success' => false,
+                'provider' => 'pollinations',
+                'model' => $this->model,
+                'message' => $msg,
+                'http_status' => $status
+            ];
+            
+        } catch (ConnectionException $e) {
+             return [
+                'success' => false,
+                'provider' => 'pollinations',
+                'model' => $this->model,
+                'message' => 'Quá thời gian kết nối tới Pollinations.'
+             ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'provider' => 'pollinations',
+                'model' => $this->model,
+                'message' => 'Lỗi hệ thống: ' . $e->getMessage()
+            ];
+        }
     }
 }

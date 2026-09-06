@@ -24,7 +24,8 @@ class GeneratePostImageJob implements ShouldQueue
     protected $prompt;
     
     public $timeout = 180;
-    public $tries = 1; // Requirement: $tries = 1 or from config
+    public $tries = 1;
+    public $failOnTimeout = true;
 
     public function __construct(int $postId, int $mediaAssetId, string $prompt)
     {
@@ -32,26 +33,52 @@ class GeneratePostImageJob implements ShouldQueue
         $this->mediaAssetId = $mediaAssetId;
         $this->prompt = $prompt;
         
-        $this->tries = config('services.cloudflare_ai.retry_times', 1);
+        $this->tries = max(1, (int) config('services.pollinations.retry_times', 0) + 1);
     }
 
     public function handle(ImageGenerationProviderInterface $imageProvider): void
     {
+        Log::info("IMAGE_JOB_STARTED", [
+            'post_id' => $this->postId,
+            'media_asset_id' => $this->mediaAssetId
+        ]);
+
         $post = Post::find($this->postId);
         $mediaAsset = MediaAsset::find($this->mediaAssetId);
 
         if (!$post || !$mediaAsset) {
-            Log::error("GeneratePostImageJob missing post or media asset");
+            Log::error("IMAGE_JOB_FAILED: GeneratePostImageJob missing post or media asset");
+            $this->fail(new \Exception("GeneratePostImageJob missing post or media asset"));
             return;
         }
 
+        $startTime = microtime(true);
+
         try {
+            Log::info("POLLINATIONS_REQUEST_STARTED", ['media_asset_id' => $this->mediaAssetId]);
             $result = $imageProvider->generate([
                 'prompt' => $this->prompt
             ]);
+            Log::info("POLLINATIONS_RESPONSE_RECEIVED", [
+                'media_asset_id' => $this->mediaAssetId, 
+                'duration_ms' => round((microtime(true) - $startTime) * 1000),
+                'http_status' => $result['http_status'] ?? null
+            ]);
 
             if (!$result['success']) {
-                throw new \Exception($result['error_message'] ?? 'Image generation failed');
+                $errorMsg = $result['error_message'] ?? 'Image generation failed';
+                $errorCode = $result['error_code'] ?? 'IMAGE_GENERATION_FAILED';
+                
+                // Add error details to media asset
+                $mediaAsset->update([
+                    'status' => 'failed',
+                    'metadata' => array_merge($mediaAsset->metadata ?? [], [
+                        'error_code' => $errorCode,
+                        'error_message' => $errorMsg,
+                        'http_status' => $result['http_status'] ?? null
+                    ])
+                ]);
+                throw new \Exception($errorMsg);
             }
 
             $imageData = $result['image_data'];
@@ -89,20 +116,33 @@ class GeneratePostImageJob implements ShouldQueue
                 throw new \Exception("IMAGE_DECODE_FAILED: File is not a valid image");
             }
 
-            // Overlay brand info
-            $overlayService = app(\App\Services\ImageOverlayService::class);
-            $brand = $post->brand ?? null;
-            if ($brand) {
-                $overlayService->overlayBrandInfo($path, $brand, $post->title ?? '');
-                // Reload size after overlay (might not change, but just to be safe if we change logic later)
-                $imageSize = @getimagesize($fullPath);
+            Log::info("IMAGE_VALIDATED", ['media_asset_id' => $this->mediaAssetId, 'path' => $path]);
+
+            // Overlay brand info safely
+            try {
+                $overlayService = app(\App\Services\ImageOverlayService::class);
+                $brand = $post->brand ?? null;
+                if ($brand) {
+                    $overlayService->overlayBrandInfo($path, $brand, $post->title ?? '');
+                    // Reload size after overlay
+                    $imageSize = @getimagesize($fullPath);
+                }
+            } catch (\Exception $overlayEx) {
+                Log::warning("Image Overlay Failed: " . $overlayEx->getMessage(), [
+                    'post_id' => $this->postId,
+                    'media_asset_id' => $this->mediaAssetId
+                ]);
+                // Tiếp tục, không fail job
             }
+
+            Log::info("IMAGE_STORED", ['media_asset_id' => $this->mediaAssetId]);
 
             DB::transaction(function () use ($post, $mediaAsset, $path, $mimeType, $extension, $fullPath, $imageSize, $result) {
                 // Update media asset
                 $metadata = $mediaAsset->metadata ?? [];
-                $metadata['provider'] = $result['provider'] ?? 'cloudflare';
-                $metadata['model'] = $result['model'] ?? 'unknown';
+                $metadata['provider'] = $result['metadata']['provider'] ?? 'pollinations';
+                $metadata['model'] = $result['metadata']['model'] ?? 'unknown';
+                $metadata['http_status'] = $result['metadata']['http_status'] ?? 200;
 
                 $mediaAsset->update([
                     'status' => 'ready',
@@ -119,49 +159,60 @@ class GeneratePostImageJob implements ShouldQueue
                     'metadata' => $metadata
                 ]);
 
-                // Handle post linking
-                $isRegenerate = $metadata['regenerate'] ?? false;
+                // Archive old primary images
+                $primaryIds = $post->media()
+                    ->wherePivot('role', 'primary')
+                    ->where('media_assets.id', '!=', $mediaAsset->id)
+                    ->pluck('media_assets.id');
                 
-                if ($isRegenerate) {
-                    // Archive existing primary images properly by looping over IDs
-                    $primaryIds = $post->media()->wherePivot('role', 'primary')->pluck('media_assets.id');
-                    foreach ($primaryIds as $pid) {
-                        $post->media()->updateExistingPivot($pid, ['role' => 'archive']);
-                    }
+                foreach ($primaryIds as $pid) {
+                    $post->media()->updateExistingPivot($pid, ['role' => 'archive']);
                 }
                 
-                // Attach new image as primary
-                $post->media()->syncWithoutDetaching([
-                    $mediaAsset->id => [
-                        'position' => 0,
-                        'role' => 'primary',
-                    ]
-                ]);
+                // Set new image as primary
+                $pivot = $post->media()->where('media_assets.id', $mediaAsset->id)->first();
+                if ($pivot) {
+                    $post->media()->updateExistingPivot($mediaAsset->id, ['role' => 'primary', 'position' => 0]);
+                } else {
+                    $post->media()->attach($mediaAsset->id, ['role' => 'primary', 'position' => 0]);
+                }
 
-                // Update post status if it was in image generation step
+                // Update post status
                 if ($post->status === Post::STATUS_GENERATING_IMAGE) {
                     $post->update(['status' => Post::STATUS_READY, 'generation_error' => null]);
                 }
             });
 
-        } catch (\Exception $e) {
-            Log::error("GeneratePostImageJob Error for Media {$this->mediaAssetId}: " . $e->getMessage());
-            
-            $mediaAsset->update([
-                'status' => 'failed',
-                'metadata' => array_merge($mediaAsset->metadata ?? [], [
-                    'error_code' => 'IMAGE_GENERATION_FAILED',
-                    'error_message' => $e->getMessage()
-                ])
+            Log::info("IMAGE_JOB_COMPLETED", [
+                'post_id' => $this->postId, 
+                'media_asset_id' => $this->mediaAssetId,
+                'duration_ms' => round((microtime(true) - $startTime) * 1000)
             ]);
 
-            $post->update([
-                'generation_error' => $e->getMessage(),
-                // Only change status to image_failed if we were actively generating
-                // If this is a background regeneration, we probably shouldn't break the whole post if it already had an image.
-                // But for simplicity according to spec:
-                'status' => Post::STATUS_IMAGE_FAILED
+        } catch (\Exception $e) {
+            Log::error("IMAGE_JOB_FAILED: " . $e->getMessage(), [
+                'post_id' => $this->postId,
+                'media_asset_id' => $this->mediaAssetId
             ]);
+            
+            // Lỗi đã được ghi vào mediaAsset nếu là từ Provider
+            // Đảm bảo ghi cho các lỗi catch khác (như decode fail, save fail)
+            if ($mediaAsset && $mediaAsset->status !== 'failed') {
+                $mediaAsset->update([
+                    'status' => 'failed',
+                    'metadata' => array_merge($mediaAsset->metadata ?? [], [
+                        'error_code' => 'IMAGE_JOB_EXCEPTION',
+                        'error_message' => $e->getMessage()
+                    ])
+                ]);
+            }
+
+            if ($post) {
+                $post->update([
+                    'generation_error' => $e->getMessage(),
+                    'status' => Post::STATUS_IMAGE_FAILED
+                ]);
+            }
 
             $this->fail($e);
         }

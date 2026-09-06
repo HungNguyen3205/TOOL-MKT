@@ -39,6 +39,7 @@ class UpdatePostRequest extends FormRequest
             'image_prompt' => 'nullable|string|max:5000',
             'scheduled_at' => 'nullable|date',
             'timezone' => 'nullable|string',
+            'facebook_page_id' => 'nullable',
         ];
     }
 

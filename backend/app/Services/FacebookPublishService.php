@@ -38,6 +38,28 @@ class FacebookPublishService implements SocialPublisherInterface
         } catch (Exception $e) {
             $this->logError("Failed to publish text post to Facebook for page: {$accountId}", $e);
             
+            throw $e;
+        }
+    }
+
+    public function publishPhotoPost(
+        string $accountId,
+        string $accessToken,
+        string $message,
+        string $photoPath,
+        string $idempotencyKey
+    ): array {
+        try {
+            $response = $this->graphService->publishPhotoPost($accountId, $accessToken, $message, $photoPath);
+            
+            return [
+                'success' => true,
+                'external_post_id' => $response['id'] ?? null,
+                'response_data' => $response
+            ];
+        } catch (Exception $e) {
+            $this->logError("Failed to publish photo post to Facebook for page: {$accountId}", $e);
+            
             // Re-throw exception so the Job can catch it and mark attempt as failed
             throw $e;
         }

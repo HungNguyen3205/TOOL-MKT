@@ -97,12 +97,23 @@ class PublishFacebookTextPost implements ShouldQueue
             // Decrypt token handled by model cast
             $token = $page->access_token;
             
-            $result = $publishService->publishText(
-                $page->page_id,
-                $token,
-                $message,
-                $publication->idempotency_key ?? (string)$publication->id
-            );
+            $imagePath = $snapshot['image_path'] ?? null;
+            if ($imagePath && file_exists($imagePath)) {
+                $result = $publishService->publishPhotoPost(
+                    $page->page_id,
+                    $token,
+                    $message,
+                    $imagePath,
+                    $publication->idempotency_key ?? (string)$publication->id
+                );
+            } else {
+                $result = $publishService->publishText(
+                    $page->page_id,
+                    $token,
+                    $message,
+                    $publication->idempotency_key ?? (string)$publication->id
+                );
+            }
 
             // Success
             $attempt->update([

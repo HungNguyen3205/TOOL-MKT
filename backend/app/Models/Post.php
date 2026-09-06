@@ -73,6 +73,7 @@ class Post extends Model
         'submitted_for_review_at' => 'datetime',
         'approved_at' => 'datetime',
         'ready_at' => 'datetime',
+        'scheduled_at' => 'datetime',
     ];
 
     public function brand()

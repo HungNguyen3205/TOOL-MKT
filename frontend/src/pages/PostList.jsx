@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { fetchPosts, deletePost, duplicatePost, updatePost, generatePostImage } from '../api/posts';
+import { fetchPosts, deletePost, duplicatePost, updatePost, generatePostImage, fetchPostImageStatus } from '../api/posts';
 import { getConnectedPages } from '../api/facebook';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -21,6 +21,7 @@ const PostList = () => {
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
   const [publishing, setPublishing] = useState(false);
   const [generatingImages, setGeneratingImages] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     loadFacebookPages();
@@ -94,13 +95,38 @@ const PostList = () => {
   const handleGenerateImage = async (postId) => {
     setGeneratingImages(prev => ({ ...prev, [postId]: true }));
     try {
-      await generatePostImage(postId, { regenerate: true });
-      setTimeout(() => {
-        loadPosts();
+      const res = await generatePostImage(postId, { regenerate: true });
+      const mediaAssetId = res.data?.media_asset_id;
+      
+      if (!mediaAssetId) {
+        setTimeout(loadPosts, 3000);
+        return;
+      }
+      
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        try {
+          const statusRes = await fetchPostImageStatus(postId, mediaAssetId);
+          const status = statusRes.data?.status;
+          if (status === 'ready' || status === 'failed' || status === 'cancelled' || attempts > 60) {
+            clearInterval(pollInterval);
+            setGeneratingImages(prev => ({ ...prev, [postId]: false }));
+            loadPosts();
+            if (status === 'failed') {
+               alert('Lỗi khi tạo ảnh: ' + statusRes.data?.error_message);
+            } else if (attempts > 60) {
+               alert('Ảnh vẫn đang xử lý. Vui lòng kiểm tra lại sau.');
+            }
+          }
+        } catch (e) {
+          clearInterval(pollInterval);
+          setGeneratingImages(prev => ({ ...prev, [postId]: false }));
+        }
       }, 3000);
+      
     } catch (err) {
       alert('Lỗi tạo ảnh: ' + (err.message || err.toString()));
-    } finally {
       setGeneratingImages(prev => ({ ...prev, [postId]: false }));
     }
   };
@@ -217,6 +243,7 @@ const PostList = () => {
 
       <div className="page-header">
         <h2>Danh sách bài viết</h2>
+        {/* Vite HMR trigger */}
         <Link to="/posts/new" className="btn-primary">Tạo bài viết thủ công</Link>
       </div>
 
@@ -283,13 +310,25 @@ const PostList = () => {
               posts.map(post => (
                 <tr key={post.id}>
                   <td>
-                    {post.final_image_path || post.image_path ? (
-                      <div style={{ 
-                        width: '100px', height: '100px', 
-                        backgroundImage: `url(http://localhost:8000/storage/${post.final_image_path || post.image_path})`, 
-                        backgroundSize: 'cover', backgroundPosition: 'center', 
-                        borderRadius: '8px', border: '1px solid var(--border)' 
-                      }}></div>
+                    {post.image_url ? (
+                      <div 
+                        style={{ 
+                          width: '100px', height: '100px', 
+                          backgroundImage: `url(${post.image_url})`, 
+                          backgroundSize: 'cover', backgroundPosition: 'center', 
+                          borderRadius: '8px', border: '1px solid var(--border)',
+                          cursor: 'pointer', position: 'relative'
+                        }}
+                        onClick={() => setPreviewImage(post.image_url)}
+                        title="Phóng to ảnh"
+                      >
+                        <div style={{
+                          position: 'absolute', bottom: '4px', right: '4px',
+                          background: 'rgba(0,0,0,0.6)', color: 'white', borderRadius: '50%',
+                          width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '12px'
+                        }}>🔍</div>
+                      </div>
                     ) : (
                       <div className="img-placeholder">
                         {generatingImages[post.id] || post.status === 'generating_image' ? (
@@ -393,6 +432,14 @@ const PostList = () => {
           >
             Trang sau
           </button>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImage && (
+        <div className="modal-overlay" onClick={() => setPreviewImage(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.85)', zIndex: 1000, cursor: 'zoom-out' }}>
+          <img src={previewImage} alt="Preview" style={{ maxWidth: '90%', maxHeight: '90%', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()} />
+          <button style={{ position: 'absolute', top: '20px', right: '30px', background: 'transparent', border: 'none', color: 'white', fontSize: '2rem', cursor: 'pointer' }} onClick={() => setPreviewImage(null)}>✕</button>
         </div>
       )}
     </div>

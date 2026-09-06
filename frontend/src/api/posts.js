@@ -72,6 +72,21 @@ export const duplicatePost = async (id) => {
   return data;
 };
 
+export const generatePostContent = async (id, payload = {}) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/generate-content`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
 export const generatePostImage = async (id, payload = {}) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const response = await fetch(`${baseUrl}/posts/${id}/generate-image`, {
@@ -87,9 +102,13 @@ export const generatePostImage = async (id, payload = {}) => {
   return data;
 };
 
-export const fetchPostImageStatus = async (id) => {
+export const fetchPostImageStatus = async (id, mediaAssetId = null) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-  const response = await fetch(`${baseUrl}/posts/${id}/image-status`, {
+  let url = `${baseUrl}/posts/${id}/image-status`;
+  if (mediaAssetId) {
+    url += `?media_asset_id=${mediaAssetId}`;
+  }
+  const response = await fetch(url, {
     headers: {
       Accept: 'application/json',
     },

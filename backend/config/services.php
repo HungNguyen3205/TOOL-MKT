@@ -49,7 +49,7 @@ return [
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-3.5-flash-lite'),
+        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-2.5-flash-lite'),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => env('GEMINI_TIMEOUT', 60),
         'max_output_tokens' => env('GEMINI_MAX_OUTPUT_TOKENS', 800),
@@ -61,6 +61,7 @@ return [
         'image_model' => env('POLLINATIONS_IMAGE_MODEL', 'flux'),
         'image_size' => env('POLLINATIONS_IMAGE_SIZE', '1024x1024'),
         'image_quality' => env('POLLINATIONS_IMAGE_QUALITY', 'low'),
-        'timeout' => env('POLLINATIONS_TIMEOUT', 180),
+        'timeout' => (int) env('POLLINATIONS_TIMEOUT', 120),
+        'retry_times' => (int) env('IMAGE_RETRY_TIMES', 0),
     ],
 ];
