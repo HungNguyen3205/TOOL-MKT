@@ -83,15 +83,8 @@ class FacebookPublishController extends Controller
                 return $existing;
             }
 
-            // Check if there is already a successful publication for this post/page
-            $alreadyPublished = Publication::where('post_id', $post->id)
-                ->where('facebook_page_id', $page->id)
-                ->where('status', 'published')
-                ->exists();
-                
-            if ($alreadyPublished) {
-                throw new \Exception('POST_ALREADY_PUBLISHED');
-            }
+            // Allow posting multiple times to the same page as requested by user.
+            // Check removed.
 
             // Create a snapshot
             $snapshot = [
@@ -106,12 +99,18 @@ class FacebookPublishController extends Controller
                 'approved_at' => $post->approved_at
             ];
 
+            // Get primary image if available
+            $image = $post->media()->where('type', 'image')->where('status', 'ready')->wherePivot('role', 'primary')->first();
+            if ($image) {
+                $snapshot['image_path'] = \Illuminate\Support\Facades\Storage::disk($image->disk)->path($image->path);
+            }
+
             // Create new publication in queued status
             $publication = Publication::create([
                 'post_id' => $post->id,
                 'facebook_page_id' => $page->id,
                 'platform' => 'facebook',
-                'publication_type' => 'text',
+                'publication_type' => $image ? 'image' : 'text',
                 'status' => 'queued',
                 'content_snapshot' => $snapshot,
                 'content_hash' => $contentHash,

@@ -74,31 +74,35 @@ class PostImageController extends Controller
             'position' => 0
         ]);
 
-        GeneratePostImageJob::dispatch($post->id, $mediaAsset->id, $prompt)->onQueue('image-generation');
+        $post->update([
+            'status' => Post::STATUS_GENERATING_IMAGE,
+            'generation_error' => null,
+        ]);
+
+        GeneratePostImageJob::dispatch($post->id, $mediaAsset->id, $prompt);
 
         return response()->json([
             'success' => true,
             'message' => 'Đã đưa yêu cầu tạo ảnh vào hàng đợi.',
             'data' => [
                 'post_id' => $post->id,
+                'media_asset_id' => $mediaAsset->id,
                 'status' => 'processing'
             ]
         ], 202);
     }
 
-    public function status(Post $post)
+    public function status(Request $request, Post $post)
     {
-        // Find the latest processing or just completed media asset
-        // We will look for the most recently created image for this post.
-        // Wait, if it's processing, it might not be attached to post_media yet if we attach it AFTER success.
-        // Let's modify generate() to attach it immediately with role 'processing' or just query MediaAsset if we save post_id.
-        // But MediaAsset table doesn't have post_id, it's a many-to-many via post_media.
-        // So we MUST attach it in generate().
+        $mediaAssetId = $request->query('media_asset_id');
+
+        $query = $post->media()->where('media_assets.type', 'image');
         
-        $latestMedia = $post->media()
-            ->where('media_assets.type', 'image')
-            ->orderBy('post_media.created_at', 'desc')
-            ->first();
+        if ($mediaAssetId) {
+            $query->where('media_assets.id', $mediaAssetId);
+        }
+        
+        $latestMedia = $query->orderBy('post_media.created_at', 'desc')->first();
 
         if (!$latestMedia) {
             return response()->json([

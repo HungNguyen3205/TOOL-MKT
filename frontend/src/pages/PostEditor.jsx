@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { 
   fetchPost, createPost, updatePost, 
   qualityCheckPost, submitReviewPost, approvePost, requestChangesPost, markReadyPost, returnToDraftPost,
-  fetchPostVersions, restorePostVersion, fetchPostActivities, generatePostImage, fetchPostImageStatus
+  fetchPostVersions, restorePostVersion, fetchPostActivities, generatePostImage, fetchPostImageStatus, generatePostContent
 } from '../api/posts';
 import { getPublications, getConnectedPages } from '../api/facebook';
 import FacebookPreview from '../components/FacebookPreview';
@@ -64,6 +64,7 @@ const PostEditor = () => {
   const debounceTimer = useRef(null);
   const pollTimer = useRef(null);
   const currentPostId = useRef(id);
+  const [generatingMediaId, setGeneratingMediaId] = useState(null);
 
   const statusMap = {
     draft: { label: 'Bản nháp', color: '#757575' },
@@ -107,20 +108,22 @@ const PostEditor = () => {
     return () => stopPollingImageStatus();
   }, [post.status]);
 
-  const startPollingImageStatus = () => {
+  const startPollingImageStatus = (mediaAssetId) => {
     if (pollTimer.current) return;
+    setGeneratingMediaId(mediaAssetId);
     pollTimer.current = setInterval(async () => {
-      if (!currentPostId.current) return;
+      if (!currentPostId.current || !mediaAssetId) return;
       try {
-        const res = await fetchPostImageStatus(currentPostId.current);
-        const { status, image_url, error_message } = res.data;
+        const res = await fetchPostImageStatus(currentPostId.current, mediaAssetId);
+        const { status, error_message } = res.data;
         
-        if (status === 'ready' || status === 'failed') {
+        if (status === 'ready' || status === 'failed' || status === 'cancelled') {
           stopPollingImageStatus();
+          setGeneratingMediaId(null);
           await loadPost(currentPostId.current);
           if (status === 'failed') {
             toast.error(error_message || 'Tạo ảnh thất bại.');
-          } else {
+          } else if (status === 'ready') {
             toast.success('Đã tạo ảnh thành công!');
           }
         }
@@ -339,6 +342,38 @@ const PostEditor = () => {
     }
   };
 
+  const handleGenerateContentBtn = async () => {
+    try {
+      setSaving(true);
+      await generatePostContent(currentPostId.current, buildPayload());
+      toast.success('Đang yêu cầu AI tạo nội dung...');
+      setTimeout(() => loadPost(currentPostId.current), 3000);
+    } catch (err) {
+      toast.error('Lỗi khi tạo nội dung: ' + (err.message || getApiErrorMessage(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleGenerateImageBtn = async () => {
+    try {
+      setSaving(true);
+      const res = await generatePostImage(currentPostId.current, { regenerate: true });
+      const mediaAssetId = res.data?.media_asset_id;
+      if (mediaAssetId) {
+        toast.success('Đang tạo ảnh...');
+        startPollingImageStatus(mediaAssetId);
+      } else {
+        toast.success('Yêu cầu tạo ảnh đã gửi.');
+        setTimeout(() => loadPost(currentPostId.current), 3000);
+      }
+    } catch (err) {
+      toast.error('Lỗi khi tạo ảnh: ' + (err.message || getApiErrorMessage(err)));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleWorkflowAction = async (actionFn, successMsg, promptConfirm = null) => {
     if (!currentPostId.current) return;
     if (isDirty.current) await savePost(false);
@@ -533,9 +568,14 @@ const PostEditor = () => {
               <button className="btn-primary" onClick={() => savePost(false)} disabled={saving}>
                 {saving ? 'Đang lưu...' : 'Lưu bản nháp'}
               </button>
-              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(217, 70, 239, 0.4)', fontWeight: 'bold' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: 'generating_content' }), "Đang tạo nội dung và hình ảnh...")} disabled={saving}>
-                ✨ Tạo nội dung & hình ảnh
+              <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', fontWeight: 'bold' }} onClick={handleGenerateContentBtn} disabled={saving}>
+                ✨ Tạo nội dung bằng AI
               </button>
+              {post.content && (
+                <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(217, 70, 239, 0.4)', fontWeight: 'bold' }} onClick={handleGenerateImageBtn} disabled={saving}>
+                  🖼️ Tạo ảnh từ nội dung
+                </button>
+              )}
               <button className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', transition: 'all 0.3s' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: post.status === 'ready' ? 'draft' : 'ready' }), "Đã thay đổi trạng thái")} disabled={saving}>
                 🔄 Thay đổi trạng thái bài đăng
               </button>

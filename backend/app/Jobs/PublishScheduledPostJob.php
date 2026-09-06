@@ -49,7 +49,7 @@ class PublishScheduledPostJob implements ShouldQueue
             return;
         }
 
-        $page = FacebookPage::where('page_id', $post->facebook_page_id)->first();
+        $page = FacebookPage::find($post->facebook_page_id);
         if (!$page || !$page->access_token) {
             $this->fail(new Exception("Facebook Page not found or access token missing."));
             return;
@@ -65,6 +65,7 @@ class PublishScheduledPostJob implements ShouldQueue
         $primaryMedia = $post->media()
             ->where('type', 'image')
             ->where('status', 'ready')
+            ->get()
             ->first(fn ($item) => $item->pivot?->role === 'primary');
 
         $result = null;

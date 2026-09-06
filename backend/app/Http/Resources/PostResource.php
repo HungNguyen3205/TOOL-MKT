@@ -25,6 +25,7 @@ class PostResource extends JsonResource
             'ai_provider' => $this->ai_provider,
             'selected_version' => $this->selected_version,
             'source_input' => $this->source_input,
+            'facebook_page_id' => $this->facebook_page_id,
             'brand_id' => $this->brand_id,
             'brand' => $this->whenLoaded('brand', function() {
                 return ['id' => $this->brand->id, 'name' => $this->brand->name];
@@ -40,6 +41,7 @@ class PostResource extends JsonResource
             'submitted_for_review_at' => $this->submitted_for_review_at ? $this->submitted_for_review_at->toIso8601String() : null,
             'approved_at' => $this->approved_at ? $this->approved_at->toIso8601String() : null,
             'ready_at' => $this->ready_at ? $this->ready_at->toIso8601String() : null,
+            'scheduled_at' => $this->scheduled_at ? (\Carbon\Carbon::parse($this->scheduled_at))->toIso8601String() : null,
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
             'media' => $this->whenLoaded('media', function () {
