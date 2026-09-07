@@ -83,8 +83,103 @@ const BrandProfileTab = ({ brand, setBrand, isNew, onSaved }) => {
     </div>
   );
 
+  const handleLogoUpload = async (e) => {
+    if (isNew) {
+      alert('Vui lòng lưu thương hiệu trước khi tải lên logo.');
+      return;
+    }
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Dung lượng file tối đa là 5MB.');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/brands/${brand.id}/logo`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // assuming token is here, or use axios instance
+        },
+        body: formData
+      });
+      const res = await response.json();
+      if (res.success) {
+        setBrand(prev => ({ ...prev, logo_url: res.data.logo_url }));
+        alert('Tải logo lên thành công!');
+      } else {
+        alert(res.message || 'Lỗi tải logo');
+      }
+    } catch (err) {
+      alert('Lỗi khi tải logo lên');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleLogoDelete = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa logo?')) return;
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/brands/${brand.id}/logo`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const res = await response.json();
+      if (res.success) {
+        setBrand(prev => ({ ...prev, logo_url: null }));
+        alert('Đã xóa logo!');
+      }
+    } catch (err) {
+      alert('Lỗi khi xóa logo');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const renderStep1 = () => (
     <div className="editor-layout">
+      <div className="form-group" style={{gridColumn: '1 / -1', padding: '15px', backgroundColor: '#222', borderRadius: '8px', border: '1px solid #444'}}>
+        <label>Logo Thương hiệu</label>
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginTop: '10px' }}>
+          <div style={{
+            width: '120px', height: '120px', backgroundColor: '#333', borderRadius: '8px',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            backgroundImage: brand.logo_url ? `url(${brand.logo_url})` : 'none',
+            backgroundSize: 'contain', backgroundPosition: 'center', backgroundRepeat: 'no-repeat',
+            border: '2px dashed #555'
+          }}>
+            {!brand.logo_url && <span style={{ color: '#777', fontSize: '0.8rem' }}>Chưa có Logo</span>}
+          </div>
+          <div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <label className="btn-primary" style={{ cursor: 'pointer', padding: '8px 16px', display: 'inline-block' }}>
+                {brand.logo_url ? 'Thay đổi Logo' : 'Tải Logo Lên'}
+                <input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleLogoUpload} style={{ display: 'none' }} disabled={saving} />
+              </label>
+              {brand.logo_url && (
+                <button type="button" className="btn-secondary" onClick={handleLogoDelete} disabled={saving} style={{ color: '#f87171', borderColor: '#f87171' }}>
+                  Xóa Logo
+                </button>
+              )}
+            </div>
+            <p style={{ margin: '10px 0 0', fontSize: '0.8rem', color: '#888' }}>
+              Định dạng: PNG, JPG, WEBP. Tối đa 5MB.<br/>
+              Khuyên dùng PNG nền trong suốt, tỷ lệ 1:1.
+            </p>
+            {isNew && <p style={{ margin: '5px 0 0', fontSize: '0.8rem', color: '#ff9800' }}>Vui lòng "Lưu thay đổi" trước khi tải logo lên.</p>}
+          </div>
+        </div>
+      </div>
+
       <div className="form-group">
         <label>Tên thương hiệu *</label>
         <input type="text" name="name" value={brand.name || ''} onChange={handleChange} required />

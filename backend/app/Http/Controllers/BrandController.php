@@ -217,4 +217,80 @@ class BrandController extends Controller
 
         return response()->json(['success' => true, 'message' => 'Đã khôi phục phiên bản.', 'data' => new BrandResource($brand->fresh())]);
     }
+
+    public function uploadLogo(Request $request, $id)
+    {
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy thương hiệu.'], 404);
+        }
+
+        $request->validate([
+            'logo' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
+        ]);
+
+        if ($request->file('logo')) {
+            $file = $request->file('logo');
+            $originalName = $file->getClientOriginalName();
+            $mimeType = $file->getMimeType();
+            $size = $file->getSize();
+
+            // Delete old logo if exists
+            if ($brand->logo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($brand->logo_path)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($brand->logo_path);
+            }
+
+            // Save new logo
+            $path = $file->store('brands/logos', 'public');
+
+            $brand->update([
+                'logo_path' => $path,
+                'logo_original_name' => $originalName,
+                'logo_mime_type' => $mimeType,
+                'logo_size' => $size,
+                'logo_updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tải logo lên thành công.',
+                'data' => [
+                    'brand_id' => $brand->id,
+                    'logo_url' => asset('storage/' . $path) . '?v=' . $brand->logo_updated_at->timestamp,
+                    'logo_updated_at' => $brand->logo_updated_at
+                ]
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Không tìm thấy file.'], 400);
+    }
+
+    public function deleteLogo($id)
+    {
+        $brand = Brand::find($id);
+        if (!$brand) {
+            return response()->json(['success' => false, 'message' => 'Không tìm thấy thương hiệu.'], 404);
+        }
+
+        if ($brand->logo_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($brand->logo_path)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($brand->logo_path);
+        }
+
+        $brand->update([
+            'logo_path' => null,
+            'logo_original_name' => null,
+            'logo_mime_type' => null,
+            'logo_size' => null,
+            'logo_updated_at' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Xóa logo thành công.',
+            'data' => [
+                'brand_id' => $brand->id,
+                'logo_url' => null,
+            ]
+        ]);
+    }
 }

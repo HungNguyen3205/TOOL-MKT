@@ -34,21 +34,22 @@ class PostController extends Controller
         $sort = $request->input('sort', 'updated_desc');
         switch ($sort) {
             case 'created_asc':
-                $query->orderBy('created_at', 'asc');
+                $query->orderBy('created_at', 'asc')->orderBy('id', 'asc');
                 break;
             case 'created_desc':
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('created_at', 'desc')->orderBy('id', 'desc');
                 break;
             case 'updated_asc':
-                $query->orderBy('updated_at', 'asc');
+                $query->orderBy('updated_at', 'asc')->orderBy('id', 'asc');
                 break;
             case 'updated_desc':
             default:
-                $query->orderBy('updated_at', 'desc');
+                $query->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
                 break;
         }
 
-        $posts = $query->paginate(10);
+        $perPage = $request->input('per_page', 25);
+        $posts = $query->paginate($perPage);
         return PostResource::collection($posts);
     }
 

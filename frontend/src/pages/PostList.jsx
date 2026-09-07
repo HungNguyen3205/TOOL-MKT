@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { fetchPosts, deletePost, duplicatePost, updatePost, generatePostImage, fetchPostImageStatus } from '../api/posts';
 import { getConnectedPages } from '../api/facebook';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 const PostList = () => {
   const [posts, setPosts] = useState([]);
@@ -12,8 +12,12 @@ const PostList = () => {
   const [status, setStatus] = useState('all');
   const [source, setSource] = useState('all');
   const [qualityStatus, setQualityStatus] = useState('all');
-  const [page, setPage] = useState(1);
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const pageParam = parseInt(searchParams.get('page')) || 1;
+  const perPageParam = parseInt(searchParams.get('per_page')) || 25;
+
+  const [page, setPage] = useState(pageParam);
+  const [perPage, setPerPage] = useState(perPageParam);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishPostId, setPublishPostId] = useState(null);
   const [facebookPages, setFacebookPages] = useState([]);
@@ -57,7 +61,7 @@ const PostList = () => {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const params = { search, status, source, page };
+      const params = { search, status, source, page, per_page: perPage };
       if (qualityStatus !== 'all') params.quality_status = qualityStatus;
       
       const data = await fetchPosts(params);
@@ -69,16 +73,36 @@ const PostList = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, status, source, qualityStatus, page]);
+  }, [search, status, source, qualityStatus, page, perPage]);
 
-  // Debounce search
+  // Sync state to URL and vice-versa
+  useEffect(() => {
+    const p = parseInt(searchParams.get('page')) || 1;
+    const pp = parseInt(searchParams.get('per_page')) || 25;
+    if (p !== page || pp !== perPage) {
+      setPage(p);
+      setPerPage(pp);
+    }
+  }, [searchParams]);
+
+  const updateUrlParams = (newPage, newPerPage) => {
+    setSearchParams({ page: newPage, per_page: newPerPage });
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1); // Reset page on new search/filter
+      // If search or filters change, we want to reset to page 1
+      // but we shouldn't reset if it's the initial load.
+      // For simplicity, we assume loadPosts is triggered by dependencies.
       loadPosts();
     }, 500);
     return () => clearTimeout(timer);
-  }, [search, status, source, qualityStatus, loadPosts]);
+  }, [loadPosts]);
+
+  const handleFilterChange = (setter, value) => {
+    setter(value);
+    updateUrlParams(1, perPage);
+  };
 
   const handleDelete = async (id, title) => {
     if (window.confirm(`Bạn có chắc muốn xóa bài viết "${title}"?`)) {
@@ -166,7 +190,10 @@ const PostList = () => {
         await updatePost(publishPostId, payload);
         alert('Đã lên lịch thành công!');
       } else {
-        // For immediate publish, we call the specific publish API (like PostPublish.jsx does)
+        // Update status to ready first so backend validation passes
+        await updatePost(publishPostId, { status: 'ready' });
+        
+        // For immediate publish, we call the specific publish API
         const payload = {
           facebook_page_id: selectedPageId,
           confirmation: true // auto-confirm since they clicked Publish
@@ -178,7 +205,6 @@ const PostList = () => {
         await updatePost(publishPostId, { status: 'publishing' }); 
         alert('Đã đưa vào hàng đợi đăng!');
       }
-      
       setShowPublishModal(false);
       setPublishPostId(null);
       loadPosts();
@@ -254,13 +280,13 @@ const PostList = () => {
             type="text" 
             placeholder="Tìm kiếm tiêu đề..." 
             value={search} 
-            onChange={(e) => setSearch(e.target.value)} 
+            onChange={(e) => handleFilterChange(setSearch, e.target.value)} 
             className="search-input"
           />
         </div>
         
         <div className="select-group">
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="custom-select">
+          <select value={status} onChange={(e) => handleFilterChange(setStatus, e.target.value)} className="custom-select">
             <option value="all">Tất cả trạng thái</option>
             <option value="draft">Bản nháp</option>
             <option value="in_review">Chờ duyệt</option>
@@ -269,7 +295,7 @@ const PostList = () => {
             <option value="ready">Sẵn sàng đăng</option>
           </select>
           
-          <select value={qualityStatus} onChange={(e) => setQualityStatus(e.target.value)} className="custom-select">
+          <select value={qualityStatus} onChange={(e) => handleFilterChange(setQualityStatus, e.target.value)} className="custom-select">
             <option value="all">Mọi chất lượng</option>
             <option value="passed">Đạt yêu cầu</option>
             <option value="warning">Cảnh báo</option>
@@ -277,7 +303,7 @@ const PostList = () => {
             <option value="unchecked">Chưa kiểm tra</option>
           </select>
           
-          <select value={source} onChange={(e) => setSource(e.target.value)} className="custom-select">
+          <select value={source} onChange={(e) => handleFilterChange(setSource, e.target.value)} className="custom-select">
             <option value="all">Tất cả nguồn</option>
             <option value="manual">Thủ công</option>
             <option value="ai_generated">AI tạo</option>
@@ -417,21 +443,66 @@ const PostList = () => {
         </table>
       </div>
 
-      {meta && meta.last_page > 1 && (
-        <div className="pagination">
-          <button 
-            disabled={page === 1} 
-            onClick={() => setPage(p => p - 1)}
-          >
-            Trang trước
-          </button>
-          <span>Trang {page} / {meta.last_page}</span>
-          <button 
-            disabled={page === meta.last_page} 
-            onClick={() => setPage(p => p + 1)}
-          >
-            Trang sau
-          </button>
+      {meta && (
+        <div className="pagination" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', padding: '15px', backgroundColor: '#222', borderRadius: '8px' }}>
+          <div style={{ color: '#ccc', fontSize: '0.9rem' }}>
+            Hiển thị {meta.from || 0}–{meta.to || 0} trong tổng số {meta.total || 0} bài viết
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <select 
+              value={perPage} 
+              onChange={(e) => updateUrlParams(1, parseInt(e.target.value))}
+              style={{ padding: '6px', backgroundColor: '#333', color: '#fff', border: '1px solid #444', borderRadius: '4px' }}
+            >
+              <option value={10}>10 bài / trang</option>
+              <option value={25}>25 bài / trang</option>
+              <option value={50}>50 bài / trang</option>
+              <option value={100}>100 bài / trang</option>
+            </select>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                disabled={page === 1} 
+                onClick={() => updateUrlParams(page - 1, perPage)}
+                style={{ padding: '6px 12px', backgroundColor: page === 1 ? '#333' : '#4f46e5', color: page === 1 ? '#666' : '#fff', border: 'none', borderRadius: '4px', cursor: page === 1 ? 'not-allowed' : 'pointer' }}
+              >
+                Trang trước
+              </button>
+              
+              {/* Generate page numbers (simplified logic for now) */}
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {Array.from({ length: meta.last_page }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === meta.last_page || Math.abs(p - page) <= 2)
+                  .map((p, i, arr) => (
+                    <React.Fragment key={p}>
+                      {i > 0 && p - arr[i - 1] > 1 && <span style={{ color: '#666', padding: '0 4px' }}>...</span>}
+                      <button
+                        onClick={() => updateUrlParams(p, perPage)}
+                        style={{
+                          padding: '4px 10px',
+                          backgroundColor: p === page ? '#4f46e5' : '#333',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontWeight: p === page ? 'bold' : 'normal'
+                        }}
+                      >
+                        {p}
+                      </button>
+                    </React.Fragment>
+                  ))}
+              </div>
+
+              <button 
+                disabled={page === meta.last_page || meta.last_page === 0} 
+                onClick={() => updateUrlParams(page + 1, perPage)}
+                style={{ padding: '6px 12px', backgroundColor: page === meta.last_page || meta.last_page === 0 ? '#333' : '#4f46e5', color: page === meta.last_page || meta.last_page === 0 ? '#666' : '#fff', border: 'none', borderRadius: '4px', cursor: page === meta.last_page || meta.last_page === 0 ? 'not-allowed' : 'pointer' }}
+              >
+                Trang sau
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -10,6 +10,7 @@ use App\Http\Controllers\FacebookPageController;
 use App\Http\Controllers\FacebookPublishController;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\RateLimiter;
+use App\Http\Controllers\DashboardController;
 
 RateLimiter::for('generate-content', function (Request $request) {
     return Limit::perMinute(5)->by($request->ip())->response(function () {
@@ -32,7 +33,13 @@ Route::get('/health', function () {
     ]);
 });
 
+Route::get('/dashboard/stats', [DashboardController::class, 'getStats']);
+
 Route::middleware('throttle:generate-content')->post('/content/generate', [\App\Http\Controllers\ContentController::class, 'generate']);
+
+// Image Generating Worker API
+Route::get('/worker/tasks', [\App\Http\Controllers\LocalFlowWorkerController::class, 'getTasks']);
+Route::post('/worker/upload', [\App\Http\Controllers\LocalFlowWorkerController::class, 'uploadImage']);
 
 // Post API
 Route::get('/posts', [\App\Http\Controllers\PostController::class, 'index']);
@@ -44,6 +51,9 @@ Route::post('/posts/{id}/duplicate', [\App\Http\Controllers\PostController::clas
 Route::post('/posts/{id}/generate-content', [\App\Http\Controllers\PostContentController::class, 'generate']);
 Route::post('/posts/{post}/generate-image', [\App\Http\Controllers\PostImageController::class, 'generate']);
 Route::get('/posts/{post}/image-status', [\App\Http\Controllers\PostImageController::class, 'status']);
+Route::post('/posts/{post}/video-draft', [\App\Http\Controllers\VideoGenerationController::class, 'generateDraft']);
+Route::get('/posts/{post}/video-status', [\App\Http\Controllers\VideoGenerationController::class, 'getStatus']);
+Route::post('/posts/{post}/video-final', [\App\Http\Controllers\VideoGenerationController::class, 'generateFinal']);
 // Removed regenerate-image route per requirements
 Route::post('/posts/{id}/quality-check', [\App\Http\Controllers\PostController::class, 'qualityCheck']);
 Route::post('/posts/{id}/submit-review', [\App\Http\Controllers\PostController::class, 'submitReview']);
@@ -62,6 +72,8 @@ Route::get('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'show'
 Route::put('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'update']);
 Route::patch('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'update']); // Alias for update
 Route::delete('/brands/{id}', [\App\Http\Controllers\BrandController::class, 'destroy']);
+Route::post('/brands/{id}/logo', [\App\Http\Controllers\BrandController::class, 'uploadLogo']);
+Route::delete('/brands/{id}/logo', [\App\Http\Controllers\BrandController::class, 'deleteLogo']);
 Route::patch('/brands/{id}/default', [\App\Http\Controllers\BrandController::class, 'setDefault']);
 Route::patch('/brands/{id}/status', [\App\Http\Controllers\BrandController::class, 'setStatus']);
 Route::get('/brands/{id}/versions', [\App\Http\Controllers\BrandController::class, 'versions']);

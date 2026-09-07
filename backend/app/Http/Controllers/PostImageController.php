@@ -48,23 +48,33 @@ class PostImageController extends Controller
             $prompt = $this->buildPrompt($post);
         }
 
-        // We use GeneratePostImageJob. We need to tell it to generate.
-        // It will create the MediaAsset inside the job, or we can create it here and pass ID.
-        // It's safer to create it here so we have a record immediately with 'processing' status.
+        $post->update([
+            'status' => Post::STATUS_GENERATING_IMAGE,
+            'image_prompt' => $prompt
+        ]);
+
+        // Lấy cookie từ request hoặc từ cấu hình hệ thống
+        $providerCookie = $request->input('provider_cookie');
+        if (empty($providerCookie)) {
+            $providerCookie = \App\Models\Setting::where('key', 'PROVIDER_COOKIE')->value('value');
+        }
+
         $mediaAsset = MediaAsset::create([
-            'workspace_id' => $post->workspace_id ?? 1, // Fallback to 1 if not set
-            'type' => 'image',
-            'status' => 'processing',
+            'brand_id' => $post->brand_id,
+            'workspace_id' => $post->workspace_id,
+            'type' => MediaAsset::TYPE_IMAGE,
+            'status' => MediaAsset::STATUS_PROCESSING,
             'disk' => 'public',
-            'path' => 'pending',
-            'original_name' => 'AI Generated',
-            'stored_name' => 'pending',
-            'mime_type' => 'pending',
+            'path' => 'pending/' . uniqid() . '.jpg',
+            'original_name' => 'generated.jpg',
+            'stored_name' => 'generated.jpg',
+            'mime_type' => 'image/jpeg',
             'size_bytes' => 0,
-            'checksum' => 'pending',
+            'checksum' => md5(uniqid()),
             'metadata' => [
                 'provider' => 'pollinations',
-                'regenerate' => $request->input('regenerate', false)
+                'regenerate' => $request->input('regenerate', false),
+                'provider_cookie' => $providerCookie
             ]
         ]);
 
@@ -131,12 +141,12 @@ class PostImageController extends Controller
 
     protected function buildPrompt(Post $post)
     {
-        // Tự tạo prompt từ tiêu đề, nội dung, cta, thương hiệu
-        $elements = [];
-        if ($post->title) $elements[] = "Title: " . $post->title;
-        if ($post->tone) $elements[] = "Tone: " . $post->tone;
-        $elements[] = "A high quality, professional photography, hyperrealistic style.";
-        
-        return implode(". ", $elements);
+        if (!empty($post->image_prompt) && !str_starts_with($post->image_prompt, 'Title:')) {
+            return $post->image_prompt;
+        }
+
+        // Tạo prompt tiếng Anh từ nội dung (hoặc ít nhất là thêm từ khóa cụ thể)
+        $topic = $post->title ? "about " . $post->title : "about fitness and wellness";
+        return "A high quality, professional photography, hyperrealistic style, {$topic}. Show relevant context (like gym, yoga studio, professional software dashboard). No random people unless they fit the context.";
     }
 }

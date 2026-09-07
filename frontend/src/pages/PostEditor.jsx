@@ -7,6 +7,7 @@ import {
 } from '../api/posts';
 import { getPublications, getConnectedPages } from '../api/facebook';
 import FacebookPreview from '../components/FacebookPreview';
+// Import removed
 import toast from 'react-hot-toast';
 
 const getApiErrorMessage = (err) => {
@@ -358,7 +359,10 @@ const PostEditor = () => {
   const handleGenerateImageBtn = async () => {
     try {
       setSaving(true);
-      const res = await generatePostImage(currentPostId.current, { regenerate: true });
+      const res = await generatePostImage(currentPostId.current, { 
+        regenerate: true,
+        prompt: post.image_prompt // Pass the prompt explicitly
+      });
       const mediaAssetId = res.data?.media_asset_id;
       if (mediaAssetId) {
         toast.success('Đang tạo ảnh...');
@@ -442,7 +446,8 @@ const PostEditor = () => {
     try {
       await generatePostImage(currentPostId.current, {
         prompt: post.image_prompt,
-        regenerate: true
+        regenerate: true,
+        provider_cookie: post.providerCookie // we'll use state if available or we can add state
       });
       toast.success("Đang yêu cầu tạo lại ảnh...");
       setPost(prev => ({ ...prev, status: 'generating_image' }));
@@ -571,10 +576,15 @@ const PostEditor = () => {
               <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)', border: 'none', fontWeight: 'bold' }} onClick={handleGenerateContentBtn} disabled={saving}>
                 ✨ Tạo nội dung bằng AI
               </button>
-              {post.content && (
-                <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(217, 70, 239, 0.4)', fontWeight: 'bold' }} onClick={handleGenerateImageBtn} disabled={saving}>
-                  🖼️ Tạo ảnh từ nội dung
-                </button>
+              {post.content && !isNew && (
+                <>
+                  <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(217, 70, 239, 0.4)', fontWeight: 'bold' }} onClick={() => navigate('/image-studio')} disabled={saving}>
+                    🖼️ Chuyển đến Image Studio
+                  </button>
+                  <button className="btn-primary" style={{ background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', border: 'none', boxShadow: '0 4px 15px rgba(236, 72, 153, 0.4)', fontWeight: 'bold' }} onClick={() => navigate('/video-studio')} disabled={saving}>
+                    🎥 Chuyển đến Video Studio
+                  </button>
+                </>
               )}
               <button className="btn-secondary" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)', transition: 'all 0.3s' }} onClick={() => handleWorkflowAction(() => updatePost(currentPostId.current, { ...buildPayload(), status: post.status === 'ready' ? 'draft' : 'ready' }), "Đã thay đổi trạng thái")} disabled={saving}>
                 🔄 Thay đổi trạng thái bài đăng
@@ -648,9 +658,36 @@ const PostEditor = () => {
 
 
 
-          <div className="form-group">
-            <label>Tiêu đề *</label>
-            <input type="text" name="title" value={post.title} onChange={handleChange} required disabled={!isEditable} />
+          <div className="form-group" style={{ display: 'flex', gap: '15px' }}>
+            <div style={{ flex: 1 }}>
+              <label>Tiêu đề *</label>
+              <input type="text" name="title" value={post.title} onChange={handleChange} required disabled={!isEditable && post.status !== 'ready'} />
+            </div>
+            <div style={{ flex: '0 0 200px' }}>
+              <label>Trạng thái</label>
+              <select 
+                name="status" 
+                value={post.status} 
+                onChange={async (e) => {
+                  const newStatus = e.target.value;
+                  setSaving(true);
+                  try {
+                    await updatePost(currentPostId.current, { status: newStatus });
+                    setPost(prev => ({ ...prev, status: newStatus }));
+                    toast.success('Đã cập nhật trạng thái');
+                  } catch (err) {
+                    toast.error(getApiErrorMessage(err));
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
+                style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: '#333', color: '#fff', border: '1px solid #555' }}
+                disabled={!currentPostId.current || saving || ['publishing', 'published'].includes(post.status)}
+              >
+                <option value="draft">Bản nháp</option>
+                <option value="ready">Sẵn sàng đăng</option>
+              </select>
+            </div>
           </div>
           
           <div className="form-group">
@@ -669,28 +706,43 @@ const PostEditor = () => {
             <input type="text" name="hashtags" value={post.hashtags} onChange={handleChange} placeholder="#omachi, #ngon" disabled={!isEditable} />
           </div>
 
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <button className="btn-secondary" style={{ width: '100%' }} onClick={() => setShowAdvancedPrompt(!showAdvancedPrompt)}>
-              {showAdvancedPrompt ? 'Ẩn Prompt Hình Ảnh Nâng Cao' : 'Xem Prompt Hình Ảnh Nâng Cao'}
-            </button>
-            {showAdvancedPrompt && (
-              <div style={{ marginTop: '10px' }}>
-                <label>Image Prompt (Tùy chỉnh nếu cần)</label>
-                <textarea 
-                  name="image_prompt" 
-                  value={post.image_prompt || ''} 
-                  onChange={handleChange} 
-                  rows="4" 
-                  disabled={!isEditable} 
-                  placeholder="Hệ thống sẽ tự tạo nếu để trống..."
-                />
-              </div>
-            )}
+          <div className="form-group" style={{ marginTop: '20px', padding: '15px', backgroundColor: '#1e1e1e', borderRadius: '8px', border: '1px solid #333' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <label style={{ margin: 0 }}>Image Prompt (Tùy chỉnh để tạo ảnh)</label>
+              {!isNew && (
+                <button 
+                  className="btn-primary" 
+                  style={{ background: 'linear-gradient(135deg, #d946ef, #8b5cf6)', border: 'none', padding: '5px 15px', fontSize: '0.9rem' }} 
+                  onClick={async () => {
+                    // Cần lưu lại trước khi gửi nếu có thay đổi
+                    if (isDirty.current) {
+                      await savePost(false);
+                    }
+                    handleGenerateImageBtn();
+                  }} 
+                  disabled={saving || !post.image_prompt}
+                >
+                  {post.status === 'generating_image' ? '⏳ Đang tạo ảnh...' : '🎨 Tạo ảnh ngay'}
+                </button>
+              )}
+            </div>
+            <textarea 
+              name="image_prompt" 
+              value={post.image_prompt || ''} 
+              onChange={handleChange} 
+              rows="4" 
+              disabled={!isEditable && post.status !== 'ready'} 
+              placeholder="Hệ thống sẽ tự tạo nếu để trống..."
+              style={{ width: '100%', padding: '10px', borderRadius: '4px', backgroundColor: '#2d2d2d', color: '#fff', border: '1px solid #444', fontFamily: 'monospace' }}
+            />
+            <small style={{ color: '#aaa', display: 'block', marginTop: '5px' }}>Chỉnh sửa prompt này bằng tiếng Anh và bấm "Tạo ảnh ngay" để render lại hình ảnh theo ý muốn.</small>
           </div>
 
           <button className="btn-secondary" onClick={handleCopy} style={{width: '100%', marginTop: 20}}>
             Sao chép toàn bộ
           </button>
+
+          {/* VideoStudio has been moved to its own dedicated page */}
         </div>
 
         <div className="editor-preview">

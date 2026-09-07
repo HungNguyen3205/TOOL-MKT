@@ -100,11 +100,24 @@ const Settings = () => {
             <label>Valid OAuth Redirect URI (Copy link này dán vào cấu hình Facebook Login)</label>
             <input 
               type="text" 
-              name="FACEBOOK_REDIRECT_URI" 
-              value={settings.FACEBOOK_REDIRECT_URI} 
+              value={settings.FACEBOOK_REDIRECT_URI || ''} 
+              readOnly 
+              style={{ backgroundColor: '#333', color: '#aaa', cursor: 'text' }}
+            />
+          </div>
+
+          <h3 style={{ marginTop: '40px' }}>Cấu hình AI Providers</h3>
+          <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '20px' }}>
+            Cookie này được dùng để chứng thực khi gọi sang các hệ thống sinh ảnh/video không cung cấp API Key chính thức (như Bing Copilot, Google Video/Gemini Web).
+          </p>
+          <div className="form-group">
+            <label>Provider Cookie / Access Token</label>
+            <input 
+              type="text" 
+              name="PROVIDER_COOKIE" 
+              value={settings.PROVIDER_COOKIE || ''} 
               onChange={handleChange} 
-              readOnly
-              style={{ backgroundColor: '#333', color: '#aaa' }}
+              placeholder="Nhập giá trị cookie (VD: _U=...)" 
             />
           </div>
 

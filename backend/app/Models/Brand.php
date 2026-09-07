@@ -13,6 +13,11 @@ class Brand extends Model
 
     protected $fillable = [
         'name',
+        'logo_path',
+        'logo_original_name',
+        'logo_mime_type',
+        'logo_size',
+        'logo_updated_at',
         'slug',
         'industry',
         'brand_type',
@@ -20,6 +25,7 @@ class Brand extends Model
         'hotline',
         'email',
         'address',
+        'service_areas',
         'description',
         'products_services',
         'positioning',
@@ -60,11 +66,17 @@ class Brand extends Model
         'platform_rules' => 'array',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
+        'logo_updated_at' => 'datetime',
     ];
 
     public function templates()
     {
         return $this->hasMany(ContentTemplate::class);
+    }
+
+    public function assets()
+    {
+        return $this->hasMany(BrandAsset::class);
     }
 
     public function posts()

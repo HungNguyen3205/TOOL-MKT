@@ -49,6 +49,8 @@ class Post extends Model
         'design_visual',
         'design_color',
         'design_suggestion',
+        'visual_brief',
+        'video_brief',
     ];
 
     // Status Constants
@@ -74,6 +76,8 @@ class Post extends Model
         'approved_at' => 'datetime',
         'ready_at' => 'datetime',
         'scheduled_at' => 'datetime',
+        'visual_brief' => 'array',
+        'video_brief' => 'array',
     ];
 
     public function brand()

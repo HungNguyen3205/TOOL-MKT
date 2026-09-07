@@ -56,9 +56,19 @@ class GeneratePostImageJob implements ShouldQueue
 
         try {
             Log::info("POLLINATIONS_REQUEST_STARTED", ['media_asset_id' => $this->mediaAssetId]);
-            $result = $imageProvider->generate([
-                'prompt' => $this->prompt
-            ]);
+            $metadata = $mediaAsset->metadata ?? [];
+            $regenerate = $metadata['regenerate'] ?? false;
+            
+            $input = [
+                'prompt' => $this->prompt,
+                'regenerate' => $regenerate
+            ];
+
+            if (!empty($metadata['provider_cookie'])) {
+                $input['cookie'] = $metadata['provider_cookie'];
+            }
+
+            $result = $imageProvider->generate($input);
             Log::info("POLLINATIONS_RESPONSE_RECEIVED", [
                 'media_asset_id' => $this->mediaAssetId, 
                 'duration_ms' => round((microtime(true) - $startTime) * 1000),

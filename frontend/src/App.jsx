@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { checkHealth } from './api';
 import ContentGenerator from './pages/ContentGenerator';
 import PostList from './pages/PostList';
@@ -12,13 +12,21 @@ import TemplateEditor from './pages/TemplateEditor';
 import FacebookPages from './pages/FacebookPages';
 import PublicationHistory from './pages/PublicationHistory';
 import Settings from './pages/Settings';
+import Dashboard from './pages/Dashboard';
+import QueueMonitor from './pages/QueueMonitor';
+import CampaignList from './pages/CampaignList';
+import CampaignWizard from './pages/CampaignWizard';
+import MediaLibrary from './pages/MediaLibrary';
+import ImageStudio from './pages/ImageStudio';
+import VideoStudioPage from './pages/VideoStudioPage';
 import { Toaster } from 'react-hot-toast';
-import './App.css';
+import AppLayout from './components/layout/AppLayout';
+import './styles/design-tokens.css';
+import './App.css'; // Keep existing styles for inner pages
 
 function App() {
   const [healthStatus, setHealthStatus] = useState('Đang kiểm tra...');
   const [loading, setLoading] = useState(true);
-  const location = useLocation();
 
   useEffect(() => {
     const fetchHealth = async () => {
@@ -40,64 +48,34 @@ function App() {
   }, []);
 
   return (
-    <div className="container">
+    <AppLayout healthStatus={healthStatus}>
       <Toaster position="top-right" />
-      <header className="header">
-        <h1>AI Facebook Content Tool</h1>
-      </header>
-      
-      <div className="sidebar">
-        <nav>
-          <ul>
-            <li className={location.pathname === '/posts' ? 'active-nav' : ''}>
-              <Link to="/posts">Bài viết</Link>
-            </li>
-            <li className={location.pathname === '/create-content' ? 'active-nav' : ''}>
-              <Link to="/create-content">Tạo nội dung AI</Link>
-            </li>
-            <li className={location.pathname.startsWith('/brands') ? 'active-nav' : ''}>
-              <Link to="/brands">Thương hiệu</Link>
-            </li>
-            <li className={location.pathname === '/facebook-pages' ? 'active-nav' : ''}>
-              <Link to="/facebook-pages">Facebook Pages</Link>
-            </li>
-            <li className={location.pathname === '/publications' ? 'active-nav' : ''}>
-              <Link to="/publications">Lịch sử đăng bài</Link>
-            </li>
-            <li className={location.pathname === '/settings' ? 'active-nav' : ''}>
-              <Link to="/settings">Cài đặt</Link>
-            </li>
-          </ul>
-        </nav>
-        <div className="sidebar-status">
-          <h4>Trạng thái API Backend</h4>
-          <p className={loading ? 'loading' : (healthStatus.includes('hoạt động') ? 'success' : 'error')}>
-            {healthStatus}
-          </p>
-        </div>
-      </div>
-
-      <main className="main-content">
-        <Routes>
-          <Route path="/" element={<Navigate to="/posts" replace />} />
-          <Route path="/create-content" element={<ContentGenerator />} />
-          <Route path="/posts" element={<PostList />} />
-          <Route path="/posts/new" element={<PostEditor />} />
-          <Route path="/posts/:id/edit" element={<PostEditor />} />
-          <Route path="/posts/:id/publish" element={<PostPublish />} />
-          <Route path="/posts/:id/publications" element={<PublicationHistory />} />
-          <Route path="/brands" element={<BrandList />} />
-          <Route path="/brands/new" element={<BrandEditor />} />
-          <Route path="/brands/:id/edit" element={<BrandEditor />} />
-          <Route path="/brands/:brandId/templates" element={<TemplateList />} />
-          <Route path="/brands/:brandId/templates/new" element={<TemplateEditor />} />
-          <Route path="/brands/:brandId/templates/:templateId/edit" element={<TemplateEditor />} />
-          <Route path="/facebook-pages" element={<FacebookPages />} />
-          <Route path="/publications" element={<PublicationHistory />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </main>
-    </div>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/queue" element={<QueueMonitor />} />
+        <Route path="/campaigns" element={<CampaignList />} />
+        <Route path="/campaigns/new" element={<CampaignWizard />} />
+        <Route path="/media" element={<MediaLibrary />} />
+        <Route path="/create-content" element={<ContentGenerator />} />
+        <Route path="/posts" element={<PostList />} />
+        <Route path="/posts/new" element={<PostEditor />} />
+        <Route path="/posts/:id/edit" element={<PostEditor />} />
+        <Route path="/posts/:id/publish" element={<PostPublish />} />
+        <Route path="/posts/:id/publications" element={<PublicationHistory />} />
+        <Route path="/brands" element={<BrandList />} />
+        <Route path="/brands/new" element={<BrandEditor />} />
+        <Route path="/brands/:id/edit" element={<BrandEditor />} />
+        <Route path="/brands/:brandId/templates" element={<TemplateList />} />
+        <Route path="/brands/:brandId/templates/new" element={<TemplateEditor />} />
+        <Route path="/brands/:brandId/templates/:id/edit" element={<TemplateEditor />} />
+        <Route path="/facebook-pages" element={<FacebookPages />} />
+        <Route path="/publications" element={<PublicationHistory />} />
+        <Route path="/image-studio" element={<ImageStudio />} />
+        <Route path="/video-studio" element={<VideoStudioPage />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </AppLayout>
   );
 }
 

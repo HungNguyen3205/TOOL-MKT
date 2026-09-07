@@ -37,10 +37,30 @@ class GeneratePostContentJob implements ShouldQueue
 Hãy viết một nội dung bài đăng Facebook tối ưu.
 Chủ đề: " . $topic . "
 Yêu cầu:
-- Tối đa 3 đoạn văn.
 - Không lặp lại tên thương hiệu quá 2 lần.
-- Output phải LÀ ĐỊNH DẠNG JSON với các key: 'title', 'content', 'cta', 'hashtags' (array of strings), 'image_prompt' (tiếng Anh mô tả ảnh).
-Chỉ trả về JSON, không kèm thêm text.";
+- Output phải LÀ ĐỊNH DẠNG JSON với cấu trúc:
+{
+  "title": "",
+  "content": "",
+  "cta": "",
+  "hashtags": [],
+  "visual_brief": {
+    "post_summary": "",
+    "main_pain_point": "",
+    "danava_solution": "",
+    "target_customer": "",
+    "main_subject": "",
+    "scene": "",
+    "visual_story": "",
+    "composition": "",
+    "headline": "",
+    "aspect_ratio": "1:1",
+    "brand_colors": ["navy", "orange", "white"],
+    "reference_assets": [],
+    "negative_requirements": []
+  }
+}
+Chỉ trả về JSON, không kèm thêm text. Đối với `visual_brief`, phải điền chi tiết, cụ thể và bám sát nội dung, tạo headline tối đa 8-12 từ cho ảnh.";
 
             $result = $textProvider->generate($prompt);
 
@@ -55,8 +75,8 @@ Chỉ trả về JSON, không kèm thêm text.";
                 'content' => $decoded['content'] ?? 'Nội dung tự động',
                 'cta' => $decoded['cta'] ?? null,
                 'hashtags' => $decoded['hashtags'] ?? [],
-                'image_prompt' => $decoded['image_prompt'] ?? 'A modern gym or yoga studio',
-                'status' => 'draft', // The prompt specifies "Cho người dùng duyệt nội dung trước khi tạo ảnh hoặc đăng bài."
+                'visual_brief' => $decoded['visual_brief'] ?? null,
+                'status' => 'draft',
                 'generation_error' => null
             ]);
 
