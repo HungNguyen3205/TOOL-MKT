@@ -49,7 +49,7 @@ return [
 
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
-        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-2.5-flash-lite'),
+        'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-3.5-flash-lite'),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => env('GEMINI_TIMEOUT', 60),
         'max_output_tokens' => env('GEMINI_MAX_OUTPUT_TOKENS', 800),

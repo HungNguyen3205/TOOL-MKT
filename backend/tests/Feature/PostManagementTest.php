@@ -144,7 +144,7 @@ class PostManagementTest extends TestCase
     public function test_can_change_status_to_ready()
     {
         $post = Post::factory()->create(['status' => 'draft']);
-        $response = $this->patchJson("/api/posts/{$post->id}/status", ['status' => 'ready']);
+        $response = $this->postJson("/api/posts/{$post->id}/mark-ready");
         $response->assertStatus(200);
         $this->assertEquals('ready', $response->json('data.status'));
     }
@@ -152,14 +152,14 @@ class PostManagementTest extends TestCase
     public function test_cannot_change_status_to_ready_if_missing_data()
     {
         $post = Post::factory()->create(['status' => 'draft', 'title' => '']);
-        $response = $this->patchJson("/api/posts/{$post->id}/status", ['status' => 'ready']);
+        $response = $this->postJson("/api/posts/{$post->id}/mark-ready");
         $response->assertStatus(422)->assertJsonPath('error_code', 'INVALID_STATUS_TRANSITION');
     }
 
     public function test_can_change_status_to_draft()
     {
         $post = Post::factory()->create(['status' => 'ready']);
-        $response = $this->patchJson("/api/posts/{$post->id}/status", ['status' => 'draft']);
+        $response = $this->postJson("/api/posts/{$post->id}/return-to-draft");
         $response->assertStatus(200);
         $this->assertEquals('draft', $response->json('data.status'));
     }

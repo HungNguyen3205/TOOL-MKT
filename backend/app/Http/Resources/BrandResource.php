@@ -12,6 +12,10 @@ class BrandResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'logo_url' => $this->logo_path ? asset('storage/' . $this->logo_path) . '?v=' . optional($this->logo_updated_at)->timestamp : null,
+            'logo_original_name' => $this->logo_original_name,
+            'logo_size' => $this->logo_size,
+            'logo_updated_at' => $this->logo_updated_at,
             'slug' => $this->slug,
             'industry' => $this->industry,
             'description' => $this->description,

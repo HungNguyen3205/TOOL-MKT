@@ -7,6 +7,8 @@ use Illuminate\Support\ServiceProvider;
 use App\Services\TextGeneration\TextGenerationProviderInterface;
 use App\Services\TextGeneration\GeminiTextProvider;
 use App\Services\ImageGeneration\ImageGenerationProviderInterface;
+use App\Services\VideoGeneration\VideoGenerationProviderInterface;
+use App\Services\VideoGeneration\GoogleVideoProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -35,6 +37,10 @@ class AppServiceProvider extends ServiceProvider
             
             // Fallback default
             return new \App\Services\ImageGeneration\PollinationsImageProvider();
+        });
+
+        $this->app->bind(VideoGenerationProviderInterface::class, function ($app) {
+            return new GoogleVideoProvider();
         });
     }
 

@@ -72,6 +72,13 @@ class CloudflareImageGenerationTest extends TestCase
             'workspace_id' => 1,
             'type' => 'image',
             'status' => 'processing',
+            'disk' => 'public',
+            'path' => 'pending/test.jpg',
+            'original_name' => 'test.jpg',
+            'stored_name' => 'test.jpg',
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => 0,
+            'checksum' => 'fake_checksum',
         ]);
 
         // Mock Provider

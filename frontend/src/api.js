@@ -33,3 +33,21 @@ export const generateContent = async (payload) => {
     throw error;
   }
 };
+export const getDashboardStats = async () => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  try {
+    const response = await fetch(`${baseUrl}/dashboard/stats`, {
+      headers: {
+        'Accept': 'application/json',
+        'X-Workspace-ID': '1' // Assuming default workspace for now
+      }
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Lỗi khi lấy Dashboard stats:', error);
+    throw error;
+  }
+};

@@ -11,6 +11,7 @@ const FacebookPages = () => {
   const [loading, setLoading] = useState(false);
   const [authStatus, setAuthStatus] = useState(null); // 'connecting', 'success', 'error'
   const [errorMsg, setErrorMsg] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   useEffect(() => {
     loadConnectedPages();
@@ -69,23 +70,14 @@ const FacebookPages = () => {
   };
 
   const handleConnectPage = async (sessionId, pageId) => {
-  setLoading(true);
-
+    setLoading(true);
     try {
       await connectPage(sessionId, pageId);
-
-      setAvailablePages(prev =>
-        prev.filter(page => page.id !== pageId)
-      );
-
+      setAvailablePages(prev => prev.filter(page => page.id !== pageId));
       await loadConnectedPages();
-
       alert('Kết nối Page thành công!');
     } catch (err) {
-      alert(
-        err.message ||
-        'Không thể lưu Facebook Page vào danh sách kết nối.'
-      );
+      alert(err.message || 'Không thể lưu Facebook Page vào danh sách kết nối.');
     } finally {
       setLoading(false);
     }
@@ -98,52 +90,76 @@ const FacebookPages = () => {
       loadConnectedPages();
     } catch (err) {
       alert(err.message || 'Token không hợp lệ.');
-      loadConnectedPages();
     }
   };
 
-  const handleDisconnect = async (id, name) => {
-    if (window.confirm(`Bạn có chắc muốn ngắt kết nối page "${name}"?`)) {
-      try {
-        await disconnectPage(id);
-        loadConnectedPages();
-      } catch (err) {
-        alert('Lỗi khi ngắt kết nối.');
-      }
+  const handleDisconnect = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn ngắt kết nối Page này?")) return;
+    try {
+      await disconnectPage(id);
+      alert('Ngắt kết nối thành công');
+      loadConnectedPages();
+    } catch (err) {
+      alert(err.message || 'Lỗi ngắt kết nối.');
     }
+  };
+
+  // Mock grouping for presentation
+  const groupedPages = {
+    'Chưa phân nhóm': connectedPages,
+    // You can add logic to group pages based on a property later
   };
 
   return (
-    <div className="post-list-page">
-      <div className="page-header">
-        <h2>Kết nối Facebook Pages</h2>
-        <button onClick={handleStartConnect} className="btn-primary" disabled={authStatus === 'connecting'}>
-          {authStatus === 'connecting' ? 'Đang chuyển hướng...' : '+ Thêm kết nối Facebook'}
-        </button>
+    <div className="dn-fb-pages">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--dn-space-6)' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 'var(--dn-text-2xl)', color: 'var(--dn-text-primary)' }}>Facebook Pages</h2>
+          <p style={{ margin: 'var(--dn-space-2) 0 0 0', color: 'var(--dn-text-secondary)' }}>Quản lý các tài khoản Fanpage được kết nối với hệ thống.</p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--dn-space-4)' }}>
+          <div style={{ display: 'flex', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-md)', overflow: 'hidden' }}>
+            <button 
+              style={{ padding: '8px 12px', background: viewMode === 'grid' ? 'var(--dn-bg-surface-hover)' : 'var(--dn-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--dn-text-primary)' }}
+              onClick={() => setViewMode('grid')}
+            >
+              ⊞ Grid
+            </button>
+            <div style={{ width: '1px', background: 'var(--dn-border-color)' }}></div>
+            <button 
+              style={{ padding: '8px 12px', background: viewMode === 'list' ? 'var(--dn-bg-surface-hover)' : 'var(--dn-bg-surface)', border: 'none', cursor: 'pointer', color: 'var(--dn-text-primary)' }}
+              onClick={() => setViewMode('list')}
+            >
+              ☰ List
+            </button>
+          </div>
+          <button className="dn-btn dn-btn-primary" onClick={handleStartConnect} disabled={loading}>
+            {loading ? 'Đang kết nối...' : '+ Kết nối Fanpage mới'}
+          </button>
+        </div>
       </div>
 
-      <div style={{marginBottom: 20}}>
-        <small style={{color: 'gray'}}>
-          Ứng dụng yêu cầu quyền: <code>pages_show_list</code> (xem danh sách page), <code>pages_manage_posts</code> (đăng bài), <code>pages_read_engagement</code> (đọc tương tác).<br/>
-          <em>* Lưu ý: Hiện tại hệ thống đang chạy trong môi trường nội bộ, chỉ kết nối các Page thuộc tài khoản Test.</em>
-        </small>
-      </div>
-
-      {errorMsg && <div className="error-alert">{errorMsg}</div>}
+      {authStatus === 'error' && (
+        <div style={{ padding: '15px', backgroundColor: 'var(--dn-color-danger)', color: 'white', borderRadius: '8px', marginBottom: '20px' }}>
+          {errorMsg}
+        </div>
+      )}
 
       {availablePages.length > 0 && (
-        <div style={{marginBottom: 40}}>
-          <h3>Pages có thể kết nối (từ phiên đăng nhập hiện tại)</h3>
-          <div className="post-grid">
+        <div style={{ backgroundColor: 'var(--dn-bg-surface)', padding: 'var(--dn-space-6)', borderRadius: 'var(--dn-radius-lg)', border: '1px solid var(--dn-border-color)', marginBottom: 'var(--dn-space-8)' }}>
+          <h3 style={{ margin: '0 0 var(--dn-space-4) 0' }}>Pages khả dụng để kết nối</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--dn-space-2)' }}>
             {availablePages.map(page => (
-              <div key={page.id} className="post-card" style={{display: 'flex', alignItems: 'center', gap: 15}}>
-                {page.picture_url && <img src={page.picture_url} alt="Page" style={{width: 50, height: 50, borderRadius: '50%'}} />}
-                <div style={{flex: 1}}>
-                  <h4>{page.name}</h4>
-                  <small>{page.id}</small>
+              <div key={page.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--dn-space-3)', backgroundColor: 'var(--dn-bg-app)', borderRadius: 'var(--dn-radius-md)', border: '1px solid var(--dn-border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <img src={page.picture_url} alt="Page avatar" style={{ width: '40px', height: '40px', borderRadius: '50%' }} />
+                  <div>
+                    <strong>{page.name}</strong>
+                    <div style={{ fontSize: '12px', color: 'var(--dn-text-secondary)' }}>ID: {page.id}</div>
+                  </div>
                 </div>
-                <button onClick={() => handleConnectPage(page.sessionId, page.id)} className="btn-primary">
-                  Kết nối
+                <button className="dn-btn dn-btn-primary" onClick={() => handleConnectPage(page.sessionId, page.id)}>
+                  Kết nối ngay
                 </button>
               </div>
             ))}
@@ -151,42 +167,68 @@ const FacebookPages = () => {
         </div>
       )}
 
-      <h3>Các Page đang kết nối</h3>
-      <div className="post-grid">
-        {loading && !connectedPages.length ? (
-          <div className="loading">Đang tải...</div>
-        ) : connectedPages.length === 0 ? (
-          <div className="empty-state">Chưa có Facebook Page nào được kết nối.</div>
-        ) : (
-          connectedPages.map(page => (
-            <div key={page.id} className="post-card">
-              <div style={{display: 'flex', alignItems: 'center', gap: 10, marginBottom: 15}}>
-                {page.page_picture_url && <img src={page.page_picture_url} alt="Page" style={{width: 40, height: 40, borderRadius: '50%'}} />}
-                <h4 style={{margin: 0}}>{page.page_name}</h4>
-              </div>
-              
-              <div className="post-meta">
-                <span className={`status ${page.connection_status === 'connected' ? 'badge-ready' : 'badge-draft'}`}>
-                  {page.connection_status === 'connected' ? 'Đang kết nối' : 'Lỗi / Hết hạn'}
-                </span>
-                <br/><br/>
-                <small>Kiểm tra lần cuối: {new Date(page.last_verified_at).toLocaleString()}</small>
-              </div>
-
-              {page.connection_status !== 'connected' && page.last_error_message && (
-                <div style={{color: 'red', fontSize: 12, marginTop: 10}}>
-                  Lỗi: {page.last_error_message}
+      {Object.entries(groupedPages).map(([groupName, pages]) => (
+        <div key={groupName} style={{ marginBottom: 'var(--dn-space-8)' }}>
+          <h3 style={{ margin: '0 0 var(--dn-space-4) 0', color: 'var(--dn-text-secondary)', borderBottom: '1px solid var(--dn-border-color)', paddingBottom: 'var(--dn-space-2)' }}>
+            {groupName} ({pages.length})
+          </h3>
+          
+          {pages.length === 0 ? (
+            <p style={{ color: 'var(--dn-text-tertiary)' }}>Không có page nào.</p>
+          ) : (
+            <div style={{ 
+              display: viewMode === 'grid' ? 'grid' : 'flex',
+              flexDirection: viewMode === 'grid' ? 'unset' : 'column',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+              gap: 'var(--dn-space-4)' 
+            }}>
+              {pages.map(page => (
+                <div key={page.id} style={{
+                  backgroundColor: 'var(--dn-bg-surface)',
+                  border: '1px solid var(--dn-border-color)',
+                  borderRadius: 'var(--dn-radius-lg)',
+                  padding: 'var(--dn-space-5)',
+                  display: viewMode === 'list' ? 'flex' : 'block',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: 'var(--dn-shadow-sm)',
+                  transition: 'transform var(--dn-transition-fast)'
+                }}
+                onMouseOver={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseOut={e => e.currentTarget.style.transform = 'none'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--dn-space-4)', marginBottom: viewMode === 'grid' ? 'var(--dn-space-4)' : 0 }}>
+                    <div style={{ width: '60px', height: '60px', borderRadius: '50%', backgroundColor: 'var(--dn-bg-app)', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+                      {page.avatar_url ? (
+                        <img src={page.avatar_url} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '24px' }}>📱</span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 style={{ margin: '0 0 5px 0', fontSize: 'var(--dn-text-lg)', color: 'var(--dn-text-primary)' }}>{page.page_name}</h4>
+                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: 'var(--dn-text-sm)' }}>
+                        <span style={{ color: page.status === 'active' ? 'var(--dn-color-success)' : 'var(--dn-color-danger)', fontWeight: 'bold' }}>
+                          ● {page.status === 'active' ? 'Đã kết nối' : 'Mất kết nối'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: 'var(--dn-space-2)', marginTop: viewMode === 'grid' ? 'var(--dn-space-4)' : 0 }}>
+                    <button className="dn-btn" onClick={() => handleVerify(page.id)} style={{ flex: viewMode === 'grid' ? 1 : 'unset', border: '1px solid var(--dn-border-color)' }}>
+                      Kiểm tra
+                    </button>
+                    <button className="dn-btn" onClick={() => handleDisconnect(page.id)} style={{ flex: viewMode === 'grid' ? 1 : 'unset', border: '1px solid var(--dn-color-danger)', color: 'var(--dn-color-danger)' }}>
+                      Ngắt kết nối
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              <div className="post-actions" style={{marginTop: 15}}>
-                <button onClick={() => handleVerify(page.id)} className="btn-secondary">Kiểm tra kết nối</button>
-                <button onClick={() => handleDisconnect(page.id, page.page_name)} className="btn-danger">Ngắt kết nối</button>
-              </div>
+              ))}
             </div>
-          ))
-        )}
-      </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 };

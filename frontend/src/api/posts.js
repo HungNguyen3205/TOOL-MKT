@@ -118,6 +118,46 @@ export const fetchPostImageStatus = async (id, mediaAssetId = null) => {
   return data;
 };
 
+export const generateVideoDraft = async (id, referenceAssets = []) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/video-draft`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({ reference_assets: referenceAssets })
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
+export const generateVideoFinal = async (id, referenceAssets = []) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/video-final`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({ reference_assets: referenceAssets })
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
+export const getVideoStatus = async (id) => {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+  const response = await fetch(`${baseUrl}/posts/${id}/video-status`, {
+    headers: { Accept: 'application/json' }
+  });
+  const data = await response.json();
+  if (!response.ok) throw data;
+  return data;
+};
+
 export const qualityCheckPost = async (id) => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
   const response = await fetch(`${baseUrl}/posts/${id}/quality-check`, {

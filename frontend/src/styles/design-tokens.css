@@ -1,0 +1,285 @@
+/* design-tokens.css */
+:root {
+  /* Colors - Modern SaaS (Blue primary, Slate grays) */
+  --dn-color-primary: #3b82f6; /* Brighter blue for dark mode */
+  --dn-color-primary-hover: #60a5fa;
+  --dn-color-primary-light: rgba(59, 130, 246, 0.2);
+  
+  --dn-color-success: #10b981;
+  --dn-color-warning: #f59e0b;
+  --dn-color-danger: #ef4444;
+  --dn-color-info: #0ea5e9;
+  
+  /* Dark Theme (Default) */
+  --dn-bg-app: #0f172a;
+  --dn-bg-surface: #1e293b;
+  --dn-bg-surface-hover: #334155;
+  
+  --dn-text-primary: #f8fafc;
+  --dn-text-secondary: #94a3b8;
+  --dn-text-tertiary: #64748b;
+  
+  --dn-border-color: #334155;
+  
+  /* Typography */
+  --dn-font-family: 'Inter', 'Roboto', system-ui, -apple-system, sans-serif;
+  --dn-text-xs: 0.75rem;
+  --dn-text-sm: 0.875rem;
+  --dn-text-base: 1rem;
+  --dn-text-lg: 1.125rem;
+  --dn-text-xl: 1.25rem;
+  --dn-text-2xl: 1.5rem;
+  
+  /* Spacing */
+  --dn-space-1: 0.25rem;
+  --dn-space-2: 0.5rem;
+  --dn-space-3: 0.75rem;
+  --dn-space-4: 1rem;
+  --dn-space-6: 1.5rem;
+  --dn-space-8: 2rem;
+  
+  /* Borders */
+  --dn-radius-sm: 4px;
+  --dn-radius-md: 6px;
+  --dn-radius-lg: 8px;
+  --dn-radius-xl: 12px;
+  --dn-radius-full: 9999px;
+  
+  /* Shadows */
+  --dn-shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --dn-shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+  --dn-shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  
+  /* Layout */
+  --dn-sidebar-width: 250px;
+  --dn-sidebar-collapsed-width: 70px;
+  --dn-header-height: 60px;
+  
+  /* Transitions */
+  --dn-transition-fast: 150ms ease;
+  --dn-transition-normal: 250ms ease;
+}
+
+[data-theme='light'] {
+  --dn-bg-app: #f8fafc;
+  --dn-bg-surface: #ffffff;
+  --dn-bg-surface-hover: #f1f5f9;
+  
+  --dn-text-primary: #0f172a;
+  --dn-text-secondary: #475569;
+  --dn-text-tertiary: #94a3b8;
+  
+  --dn-border-color: #e2e8f0;
+}
+
+/* Global Reset for SaaS UI */
+body.danava-ui {
+  background-color: var(--dn-bg-app);
+  color: var(--dn-text-primary);
+  font-family: var(--dn-font-family);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Layout Classes */
+.dn-layout-wrapper {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.dn-sidebar {
+  width: var(--dn-sidebar-width);
+  background-color: var(--dn-bg-surface);
+  border-right: 1px solid var(--dn-border-color);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--dn-transition-normal);
+  z-index: 100;
+}
+
+.dn-sidebar.collapsed {
+  width: var(--dn-sidebar-collapsed-width);
+}
+
+.dn-sidebar-header {
+  height: var(--dn-header-height);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--dn-space-4);
+  border-bottom: 1px solid var(--dn-border-color);
+}
+
+.dn-sidebar-logo-text {
+  font-weight: 700;
+  font-size: var(--dn-text-lg);
+  color: var(--dn-text-primary);
+  margin-left: var(--dn-space-2);
+  white-space: nowrap;
+}
+
+.dn-sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--dn-space-4) var(--dn-space-2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--dn-space-1);
+}
+
+.dn-nav-item {
+  display: flex;
+  align-items: center;
+  padding: var(--dn-space-2) var(--dn-space-3);
+  border-radius: var(--dn-radius-md);
+  color: var(--dn-text-secondary);
+  text-decoration: none;
+  font-size: var(--dn-text-sm);
+  font-weight: 500;
+  transition: all var(--dn-transition-fast);
+  cursor: pointer;
+}
+
+.dn-nav-item:hover {
+  background-color: var(--dn-bg-surface-hover);
+  color: var(--dn-text-primary);
+}
+
+.dn-nav-item.active {
+  background-color: var(--dn-color-primary-light);
+  color: var(--dn-color-primary);
+}
+
+[data-theme='dark'] .dn-nav-item.active {
+  background-color: rgba(37, 99, 235, 0.2);
+}
+
+.dn-nav-icon {
+  font-size: 1.25rem;
+  margin-right: var(--dn-space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+}
+
+/* Main Area */
+.dn-main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* Important for flex child truncation */
+}
+
+/* Header */
+.dn-header {
+  height: var(--dn-header-height);
+  background-color: var(--dn-bg-surface);
+  border-bottom: 1px solid var(--dn-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--dn-space-6);
+  z-index: 90;
+}
+
+.dn-header-left, .dn-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--dn-space-4);
+}
+
+/* Components */
+.dn-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  border-radius: var(--dn-radius-md);
+  font-weight: 500;
+  font-size: var(--dn-text-sm);
+  cursor: pointer;
+  transition: all var(--dn-transition-fast);
+  background-color: var(--dn-bg-surface);
+  color: var(--dn-text-primary);
+  outline: none;
+}
+
+.dn-btn:hover {
+  background-color: var(--dn-bg-surface-hover);
+  transform: translateY(-1px);
+}
+
+.dn-btn:active {
+  transform: translateY(1px);
+}
+
+.dn-btn-primary {
+  background-color: var(--dn-color-primary);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
+.dn-btn-primary:hover {
+  background-color: var(--dn-color-primary-hover);
+  box-shadow: 0 4px 6px rgba(59, 130, 246, 0.4);
+}
+
+/* Animations */
+@keyframes dn-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dn-slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.dn-dashboard > *, .dn-queue-monitor > *, .dn-fb-pages > *, .dn-campaigns > *, .dn-media-library > * {
+  animation: dn-slide-up 0.4s ease forwards;
+  opacity: 0;
+}
+
+/* Staggered animation delays for UI blocks */
+.dn-dashboard > *:nth-child(1), .dn-queue-monitor > *:nth-child(1) { animation-delay: 0.1s; }
+.dn-dashboard > *:nth-child(2), .dn-queue-monitor > *:nth-child(2) { animation-delay: 0.2s; }
+.dn-dashboard > *:nth-child(3), .dn-queue-monitor > *:nth-child(3) { animation-delay: 0.3s; }
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dn-layout-wrapper {
+    flex-direction: column;
+  }
+  .dn-sidebar {
+    width: 100%;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--dn-border-color);
+  }
+  .dn-header-left input {
+    display: none; /* Hide search on mobile */
+  }
+  .dn-dashboard > div {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Main Content Wrapper */
+.dn-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--dn-space-6);
+  background-color: var(--dn-bg-app);
+}
+
+/* Utilities */
+.dn-text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

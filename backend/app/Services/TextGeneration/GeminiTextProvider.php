@@ -16,7 +16,7 @@ class GeminiTextProvider implements TextGenerationProviderInterface
     public function __construct()
     {
         $this->apiKey = config('services.gemini.api_key');
-        $this->model = config('services.gemini.text_model', 'gemini-2.5-flash-lite');
+        $this->model = config('services.gemini.text_model', 'gemini-3.5-flash-lite');
         $this->baseUrl = config('services.gemini.base_url', 'https://generativelanguage.googleapis.com/v1beta');
         $this->timeout = (int) config('services.gemini.timeout', 60);
         $this->maxTokens = (int) config('services.gemini.max_output_tokens', 800);

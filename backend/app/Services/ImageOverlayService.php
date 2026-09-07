@@ -2,86 +2,142 @@
 
 namespace App\Services;
 
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
+use App\Models\Post;
+use App\Models\MediaAsset;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ImageOverlayService
 {
-    protected $manager;
-
-    public function __construct()
-    {
-        $this->manager = new ImageManager(new Driver());
-    }
-
     /**
-     * Overlay brand information onto a base image.
-     *
-     * @param string $baseImagePath Path in the storage disk (e.g. 'public/generated-images/...')
-     * @param \App\Models\Brand $brand
-     * @param string $title
-     * @return bool True if successful
+     * Process raw background image, overlay logo and headline, and save.
      */
-    public function overlayBrandInfo(string $baseImagePath, $brand, string $title = ''): bool
+    public function processAndSave(Post $post, $uploadedFile)
     {
-        try {
-            $fullPath = Storage::disk('public')->path($baseImagePath);
-            
-            if (!file_exists($fullPath)) {
-                Log::error("ImageOverlayService: Base image not found at $fullPath");
-                return false;
-            }
+        $brand = $post->brand;
+        
+        // 1. Save original raw image
+        $originalFilename = 'raw_' . Str::random(10) . '.' . $uploadedFile->getClientOriginalExtension();
+        $originalPath = $uploadedFile->storeAs('posts/raw', $originalFilename, 'public');
 
-            $image = $this->manager->read($fullPath);
-            $width = $image->width();
-            $height = $image->height();
-
-            // Overlay Logo if exists
-            // Since we don't have a logo field in Brand, we can check for a default path
-            $logoPath = Storage::disk('public')->path("brands/{$brand->id}/logo.png");
-            if (file_exists($logoPath)) {
-                $logo = $this->manager->read($logoPath);
-                // Resize logo to be at most 15% of image width
-                $logoTargetWidth = intval($width * 0.15);
-                $logo->scaleDown(width: $logoTargetWidth);
-                $image->place($logo, 'top-left', 20, 20);
-            }
-
-            // Overlay Hotline/Website at bottom
-            $contactText = '';
-            if ($brand->hotline) {
-                $contactText .= "Hotline: {$brand->hotline}   ";
-            }
-            if ($brand->website) {
-                $contactText .= "Web: {$brand->website}";
-            }
-
-            if (!empty($contactText)) {
-                // Add a semi-transparent black rectangle at the bottom
-                $barHeight = 50;
-                $image->drawRectangle(0, $height - $barHeight, function ($rectangle) use ($width, $height, $barHeight) {
-                    $rectangle->size($width, $barHeight);
-                    $rectangle->background('rgba(0, 0, 0, 0.6)');
-                });
-
-                // Write text
-                $image->text($contactText, $width / 2, $height - 25, function($font) {
-                    // font size is proportional to width
-                    $font->size(20);
-                    $font->color('#ffffff');
-                    $font->align('center');
-                    $font->valign('middle');
-                });
-            }
-
-            $image->save($fullPath);
-
-            return true;
-        } catch (\Exception $e) {
-            Log::error("ImageOverlayService: Failed to overlay. " . $e->getMessage());
-            return false;
+        // 2. Load the image into GD
+        $imagePath = Storage::disk('public')->path($originalPath);
+        $ext = strtolower($uploadedFile->getClientOriginalExtension());
+        
+        if ($ext === 'jpg' || $ext === 'jpeg') {
+            $image = @imagecreatefromjpeg($imagePath);
+        } elseif ($ext === 'png') {
+            $image = @imagecreatefrompng($imagePath);
+        } elseif ($ext === 'webp') {
+            $image = @imagecreatefromwebp($imagePath);
+        } else {
+            throw new \Exception("Unsupported image format");
         }
+
+        if (!$image) {
+            throw new \Exception("Could not read image file");
+        }
+
+        $imgWidth = imagesx($image);
+        $imgHeight = imagesy($image);
+
+        // 3. Overlay Logo
+        if ($brand && $brand->logo_path && Storage::disk('public')->exists($brand->logo_path)) {
+            $logoPath = Storage::disk('public')->path($brand->logo_path);
+            $logoExt = strtolower(pathinfo($logoPath, PATHINFO_EXTENSION));
+            
+            $logo = null;
+            if ($logoExt === 'png') $logo = @imagecreatefrompng($logoPath);
+            elseif ($logoExt === 'jpg' || $logoExt === 'jpeg') $logo = @imagecreatefromjpeg($logoPath);
+            elseif ($logoExt === 'webp') $logo = @imagecreatefromwebp($logoPath);
+
+            if ($logo) {
+                $logoWidth = imagesx($logo);
+                $logoHeight = imagesy($logo);
+
+                // Calculate target logo size (e.g. 15% of image width)
+                $targetLogoWidth = $imgWidth * 0.15;
+                $targetLogoHeight = ($logoHeight / $logoWidth) * $targetLogoWidth;
+
+                // Calculate position (top right, 5% margin)
+                $margin = $imgWidth * 0.05;
+                $xPos = $imgWidth - $targetLogoWidth - $margin;
+                $yPos = $margin;
+
+                // Create a temporary image for resized logo
+                $resizedLogo = imagecreatetruecolor($targetLogoWidth, $targetLogoHeight);
+                
+                // Preserve transparency
+                imagealphablending($resizedLogo, false);
+                imagesavealpha($resizedLogo, true);
+                $transparent = imagecolorallocatealpha($resizedLogo, 255, 255, 255, 127);
+                imagefilledrectangle($resizedLogo, 0, 0, $targetLogoWidth, $targetLogoHeight, $transparent);
+
+                // Resize and copy
+                imagecopyresampled($resizedLogo, $logo, 0, 0, 0, 0, $targetLogoWidth, $targetLogoHeight, $logoWidth, $logoHeight);
+
+                // Overlay onto main image
+                imagealphablending($image, true);
+                imagecopy($image, $resizedLogo, $xPos, $yPos, 0, 0, $targetLogoWidth, $targetLogoHeight);
+
+                imagedestroy($logo);
+                imagedestroy($resizedLogo);
+            }
+        }
+
+        // 4. Overlay Headline
+        $visualBrief = $post->visual_brief;
+        $headline = $visualBrief['headline'] ?? null;
+        if ($headline) {
+            $fontPath = storage_path('app/fonts/times.ttf');
+            if (file_exists($fontPath)) {
+                // Determine font size based on image width (e.g. 5% of width)
+                $fontSize = $imgWidth * 0.05;
+                $textColor = imagecolorallocate($image, 255, 255, 255); // White text
+                $shadowColor = imagecolorallocate($image, 0, 0, 0); // Black shadow
+
+                // Very basic word wrapping for headline (max 8-12 words normally, so maybe max length)
+                $lines = explode('|', wordwrap($headline, 40, '|'));
+                
+                // Bottom center positioning
+                $y = $imgHeight - ($imgHeight * 0.15); // 15% from bottom
+
+                foreach ($lines as $line) {
+                    $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+                    $textWidth = $bbox[2] - $bbox[0];
+                    $x = ($imgWidth - $textWidth) / 2; // Center horizontally
+
+                    // Draw shadow
+                    imagettftext($image, $fontSize, 0, $x + 2, $y + 2, $shadowColor, $fontPath, $line);
+                    // Draw text
+                    imagettftext($image, $fontSize, 0, $x, $y, $textColor, $fontPath, $line);
+
+                    $y += ($fontSize * 1.5); // Line height
+                }
+            }
+        }
+
+        // 5. Save final image
+        $finalFilename = 'final_' . Str::random(10) . '.jpg';
+        $finalPath = 'posts/final/' . $finalFilename;
+        $finalDiskPath = Storage::disk('public')->path($finalPath);
+
+        // Ensure directory exists
+        if (!Storage::disk('public')->exists('posts/final')) {
+            Storage::disk('public')->makeDirectory('posts/final');
+        }
+
+        imagejpeg($image, $finalDiskPath, 90);
+        imagedestroy($image);
+
+        // 6. Create MediaAsset
+        $mediaAsset = MediaAsset::create([
+            'post_id' => $post->id,
+            'file_path' => $finalPath,
+            'file_type' => 'image',
+            'file_size' => filesize($finalDiskPath),
+        ]);
+
+        return $mediaAsset;
     }
 }

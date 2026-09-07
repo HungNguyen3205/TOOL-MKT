@@ -38,7 +38,14 @@ class PollinationsImageProvider implements ImageGenerationProviderInterface
         }
 
         try {
+            $headers = [];
+            if (!empty($input['cookie'])) {
+                // Remove newlines which are invalid in HTTP headers
+                $headers['Cookie'] = str_replace(["\r", "\n"], ' ', $input['cookie']);
+            }
+
             $response = Http::withToken($this->apiKey)
+                ->withHeaders($headers)
                 ->acceptJson()
                 ->asJson()
                 ->connectTimeout(15)

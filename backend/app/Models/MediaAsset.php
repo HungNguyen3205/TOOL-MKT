@@ -11,6 +11,23 @@ class MediaAsset extends Model
 {
     use HasFactory, SoftDeletes, BelongsToWorkspace;
 
+    // Type Constants
+    public const TYPE_IMAGE = 'image';
+    public const TYPE_VIDEO = 'video';
+
+    // Status Constants
+    public const STATUS_PROCESSING = 'processing';
+    public const STATUS_READY = 'ready';
+    public const STATUS_FAILED = 'failed';
+    public const STATUS_VIDEO_DRAFT_QUEUED = 'video_draft_queued';
+    public const STATUS_VIDEO_DRAFT_PROCESSING = 'video_draft_processing';
+    public const STATUS_VIDEO_DRAFT_READY = 'video_draft_ready';
+    public const STATUS_VIDEO_DRAFT_FAILED = 'video_draft_failed';
+    public const STATUS_VIDEO_FINAL_QUEUED = 'video_final_queued';
+    public const STATUS_VIDEO_FINAL_PROCESSING = 'video_final_processing';
+    public const STATUS_VIDEO_FINAL_READY = 'video_final_ready';
+    public const STATUS_VIDEO_FINAL_FAILED = 'video_final_failed';
+
     protected $fillable = [
         'brand_id', 'uploaded_by', 'workspace_id',
         'type', 'status', 'disk', 'path',
