@@ -53,8 +53,13 @@ class FacebookCommentService
         $comment->update(['last_attempt_at' => now()]);
 
         try {
+            $graphVersion = config('services.facebook.graph_version', 'v20.0');
+            $timeout = (int) config('services.facebook.timeout', 30);
+
             $response = Http::withToken($page->access_token)
-                ->post("https://graph.facebook.com/v19.0/{$fbPostId}/comments", [
+                ->acceptJson()
+                ->timeout($timeout)
+                ->post("https://graph.facebook.com/{$graphVersion}/{$fbPostId}/comments", [
                     'message' => $comment->content,
                 ]);
 
