@@ -30,7 +30,7 @@ class FacebookGraphService
         $this->redirectUri = $dbSettings['FACEBOOK_REDIRECT_URI'] ?? config('services.facebook.redirect');
         
         $this->graphVersion = config('services.facebook.graph_version', 'v20.0');
-        $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_read_user_content');
+        $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement');
         $this->timeout = config('services.facebook.timeout', 30);
         
         $this->baseUrl = "https://graph.facebook.com/{$this->graphVersion}";

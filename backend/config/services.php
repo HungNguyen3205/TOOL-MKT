@@ -28,7 +28,7 @@ return [
         'app_secret' => env('FACEBOOK_APP_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
         'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v20.0'),
-        'scopes' => env('FACEBOOK_SCOPES', 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_read_user_content'),
+        'scopes' => env('FACEBOOK_SCOPES', 'pages_show_list,pages_manage_posts,pages_read_engagement'),
         'frontend_redirect' => env('FACEBOOK_FRONTEND_REDIRECT_URL'),
         'timeout' => (int) env('FACEBOOK_HTTP_TIMEOUT', 30),
         'queue' => env('FACEBOOK_PUBLISH_QUEUE', 'facebook-publish'),
