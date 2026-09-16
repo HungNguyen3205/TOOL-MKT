@@ -25,6 +25,7 @@ class PostResource extends JsonResource
             'ai_provider' => $this->ai_provider,
             'selected_version' => $this->selected_version,
             'source_input' => $this->source_input,
+            'image_prompt' => $this->image_prompt,
             'facebook_page_id' => $this->facebook_page_id,
             'brand_id' => $this->brand_id,
             'brand' => $this->whenLoaded('brand', function() {

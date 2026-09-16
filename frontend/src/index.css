@@ -1,3 +1,5 @@
+@import './styles/design-tokens.css';
+
 :root {
   --bg-color: #0f172a;
   --surface: #1e293b;
@@ -21,7 +23,7 @@ body, html {
   padding: 0;
   background-color: var(--bg-color);
   color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   background-image: 
@@ -293,4 +295,308 @@ input:focus, textarea:focus, select:focus {
   flex-direction: column;
   gap: 8px;
   border: 1px dashed var(--border);
+}
+
+/* Advanced Options SaaS Dark Mode */
+.advanced-content-panel {
+  --panel-bg: #111b31;
+  --card-bg: #17233b;
+  --card-hover: #1b2945;
+  --input-bg: #0f192d;
+  --input-hover: #13203a;
+  --border: #2a3956;
+  --border-focus: #7c5cff;
+  --text-main: #f5f7ff;
+  --text-secondary: #aab5ca;
+  --text-muted: #75839e;
+  --primary: #7c5cff;
+  --primary-hover: #906fff;
+  
+  margin-top: 15px;
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.advanced-toggle-btn {
+  width: 100%;
+  height: 52px;
+  padding: 0 18px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 200ms ease;
+}
+
+.advanced-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.advanced-toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: rgba(124, 92, 255, 0.15);
+  color: var(--primary);
+  border-radius: 6px;
+  margin-right: 12px;
+  font-size: 14px;
+}
+
+.advanced-arrow {
+  transition: transform 200ms ease;
+  color: var(--text-muted);
+}
+.advanced-arrow.open {
+  transform: rotate(180deg);
+}
+
+.advanced-body {
+  padding: 18px;
+  padding-top: 0;
+}
+
+.advanced-section-card {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 16px;
+  transition: background 200ms ease;
+}
+.advanced-section-card:last-child {
+  margin-bottom: 0;
+}
+.advanced-section-card:hover {
+  background: var(--card-hover);
+}
+
+.advanced-section-title {
+  color: #d8ddff;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.advanced-field {
+  margin-bottom: 16px;
+}
+.advanced-field:last-child {
+  margin-bottom: 0;
+}
+
+.advanced-field label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 7px;
+}
+
+.advanced-field label .required {
+  color: #ff647c;
+}
+
+.advanced-field .field-desc {
+  display: block;
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: -3px;
+  margin-bottom: 6px;
+  font-weight: normal;
+}
+
+.advanced-field input[type="text"],
+.advanced-field input[type="number"],
+.advanced-field select,
+.advanced-field textarea {
+  background: var(--input-bg);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 11px 13px;
+  font-size: 14px;
+  line-height: 1.5;
+  width: 100%;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  box-sizing: border-box;
+}
+
+.advanced-field input::placeholder,
+.advanced-field textarea::placeholder {
+  color: #667590;
+  opacity: 1;
+}
+
+.advanced-field input:hover,
+.advanced-field select:hover,
+.advanced-field textarea:hover {
+  background: var(--input-hover);
+  border-color: #3b4d70;
+}
+
+.advanced-field input:focus,
+.advanced-field select:focus,
+.advanced-field textarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.16);
+  background: var(--input-bg);
+}
+
+.advanced-field select {
+  min-height: 44px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/200.0/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23aab5ca' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 40px;
+}
+.advanced-field select option {
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+
+.advanced-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.advanced-field textarea::-webkit-scrollbar {
+  width: 8px;
+}
+.advanced-field textarea::-webkit-scrollbar-track {
+  background: var(--input-bg);
+  border-radius: 4px;
+}
+.advanced-field textarea::-webkit-scrollbar-thumb {
+  background: #2a3956;
+  border-radius: 4px;
+}
+.advanced-field textarea::-webkit-scrollbar-thumb:hover {
+  background: #3b4d70;
+}
+
+.advanced-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 8px 0;
+  border-radius: 8px;
+}
+.advanced-checkbox:hover .checkbox-box {
+  border-color: var(--primary);
+}
+.advanced-checkbox input {
+  display: none;
+}
+.checkbox-box {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--input-bg);
+  transition: all 0.2s;
+}
+.advanced-checkbox input:checked + .checkbox-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.checkbox-box svg {
+  color: white;
+  opacity: 0;
+  transform: scale(0.5);
+  transition: all 0.2s;
+}
+.advanced-checkbox input:checked + .checkbox-box svg {
+  opacity: 1;
+  transform: scale(1);
+}
+.checkbox-label {
+  color: #c6cee0;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+}
+
+/* AI Generate Button */
+.btn-generate-ai {
+  background: linear-gradient(135deg, #6d5dfc, #a855f7);
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  min-height: 44px;
+  padding: 0 20px;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(124, 92, 255, 0.25);
+  width: 100%;
+  margin-top: 20px;
+  font-size: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.btn-generate-ai:hover:not(:disabled) {
+  background: linear-gradient(135deg, #7c6cff, #b562ff);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 28px rgba(124, 92, 255, 0.3);
+}
+.btn-generate-ai:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+.ai-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s linear infinite;
+}
+
+/* Grid adjustments */
+.advanced-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .advanced-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .advanced-section-card {
+    padding: 14px;
+  }
+  .advanced-body {
+    padding: 14px;
+    padding-top: 0;
+  }
 }

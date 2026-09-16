@@ -238,7 +238,7 @@ const PostPublish = () => {
               {buildPreview()}
             </div>
             
-            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'rgba(255, 152, 0, 0.1)', borderLeft: '4px solid #ff9800', borderRadius: '4px' }}>
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'rgba(255, 152, 0, 0.1)', border: '1px solid #ff9800', borderRadius: '8px' }}>
               <p style={{ margin: 0, color: '#ffb300', fontSize: '0.9rem' }}>
                 <strong style={{display:'block', marginBottom:'5px'}}>💡 Lưu ý quan trọng:</strong> 
                 Nội dung hiển thị ở trên là đoạn Text nguyên bản sẽ được gửi qua Facebook API. Định dạng và khoảng cách dòng có thể thay đổi một chút khi hiển thị thực tế trên Facebook App tùy thuộc vào thiết bị của người xem.

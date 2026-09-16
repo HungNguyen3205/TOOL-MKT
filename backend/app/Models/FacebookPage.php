@@ -50,4 +50,9 @@ class FacebookPage extends Model
     {
         return $this->belongsTo(Workspace::class);
     }
+
+    public function comments()
+    {
+        return $this->hasMany(PostComment::class);
+    }
 }

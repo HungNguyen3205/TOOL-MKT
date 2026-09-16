@@ -7,7 +7,7 @@ import {
 } from '../api/posts';
 import { getPublications, getConnectedPages } from '../api/facebook';
 import FacebookPreview from '../components/FacebookPreview';
-// Import removed
+import PostComments from '../components/PostComments';
 import toast from 'react-hot-toast';
 
 const getApiErrorMessage = (err) => {
@@ -34,6 +34,7 @@ const PostEditor = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [scheduleData, setScheduleData] = useState({ date: '', time: '' });
+  const [activeTab, setActiveTab] = useState('content'); // content, image, comments, history
   
   const [reviewNote, setReviewNote] = useState('');
   
@@ -493,7 +494,7 @@ const PostEditor = () => {
                 <div style={{ flex: 1 }}>
                   <h4>Nhật ký hoạt động</h4>
                   {activities.map(a => (
-                    <div key={a.id} style={{ borderLeft: '2px solid #555', paddingLeft: 10, marginBottom: 15 }}>
+                    <div key={a.id} style={{ border: '1px solid #555', borderRadius: '4px', paddingLeft: 10, paddingRight: 10, marginBottom: 15 }}>
                       <strong style={{ display: 'block' }}>{a.action}</strong>
                       {a.from_status && <span style={{ fontSize: '0.8rem', color: '#999' }}>{a.from_status} &rarr; {a.to_status}</span>}
                       <div style={{ fontSize: '0.75rem', color: '#666', marginTop: 3 }}>{new Date(a.created_at).toLocaleString()}</div>
@@ -612,8 +613,32 @@ const PostEditor = () => {
 
       <div className="editor-layout">
         <div className="editor-form">
+          <div className="editor-tabs" style={{ display: 'flex', gap: '20px', marginBottom: '20px', borderBottom: '1px solid #444', paddingBottom: '10px' }}>
+            <button 
+              className={`tab-btn ${activeTab === 'content' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('content')} 
+              style={{ background: 'none', border: 'none', color: activeTab === 'content' ? '#2196f3' : '#fff', fontWeight: activeTab === 'content' ? 'bold' : 'normal', borderBottom: activeTab === 'content' ? '2px solid #2196f3' : 'none', cursor: 'pointer', paddingBottom: '5px' }}
+            >
+              Nội dung & Hình ảnh
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'comments' ? 'active' : ''}`} 
+              onClick={() => setActiveTab('comments')} 
+              disabled={isNew}
+              style={{ background: 'none', border: 'none', color: activeTab === 'comments' ? '#2196f3' : (isNew ? '#666' : '#fff'), fontWeight: activeTab === 'comments' ? 'bold' : 'normal', borderBottom: activeTab === 'comments' ? '2px solid #2196f3' : 'none', cursor: isNew ? 'not-allowed' : 'pointer', paddingBottom: '5px' }}
+            >
+              Bình luận
+            </button>
+          </div>
+          
+          {activeTab === 'comments' && !isNew && (
+            <PostComments postId={currentPostId.current} postStatus={post.status} />
+          )}
+
+          {activeTab === 'content' && (
+            <>
           {post.review_note && ['changes_requested', 'draft'].includes(post.status) && (
-            <div style={{ backgroundColor: '#3e2723', padding: 15, borderRadius: 8, marginBottom: 20, borderLeft: '4px solid #ff9800' }}>
+            <div style={{ backgroundColor: '#3e2723', padding: 15, borderRadius: 8, marginBottom: 20, border: '1px solid #ff9800' }}>
               <strong>Yêu cầu chỉnh sửa từ người duyệt:</strong>
               <p style={{ margin: '5px 0 0' }}>{post.review_note}</p>
             </div>
@@ -626,14 +651,14 @@ const PostEditor = () => {
           )}
 
           {post.status === 'image_failed' && post.generation_error && (
-            <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: 15, borderRadius: 8, marginBottom: 20, borderLeft: '4px solid #f44336' }}>
+            <div style={{ backgroundColor: '#ffebee', color: '#c62828', padding: 15, borderRadius: 8, marginBottom: 20, border: '1px solid #f44336' }}>
               <strong>Lỗi tạo ảnh:</strong>
               <p style={{ margin: '5px 0 0' }}>{post.generation_error}</p>
             </div>
           )}
 
           {post.quality_result && post.quality_score !== null && (
-            <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: `4px solid ${post.quality_status === 'passed' ? '#4caf50' : (post.quality_status === 'warning' ? '#ff9800' : '#f44336')}` }}>
+            <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: `1px solid ${post.quality_status === 'passed' ? '#4caf50' : (post.quality_status === 'warning' ? '#ff9800' : '#f44336')}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong style={{ color: '#333' }}>Đánh giá AI: {post.quality_score}/100 điểm</strong>
               </div>
@@ -720,7 +745,7 @@ const PostEditor = () => {
                     }
                     handleGenerateImageBtn();
                   }} 
-                  disabled={saving || !post.image_prompt}
+                  disabled={saving || !post.image_prompt || post.status === 'generating_image'}
                 >
                   {post.status === 'generating_image' ? '⏳ Đang tạo ảnh...' : '🎨 Tạo ảnh ngay'}
                 </button>
@@ -743,6 +768,8 @@ const PostEditor = () => {
           </button>
 
           {/* VideoStudio has been moved to its own dedicated page */}
+            </>
+          )}
         </div>
 
         <div className="editor-preview">

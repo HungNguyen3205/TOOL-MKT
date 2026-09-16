@@ -80,7 +80,7 @@ const ResultDisplay = ({ results, metadata, onRegenerate, loading, onSave, saved
       {selectedVersion && (
         <div className="version-card">
           {selectedVersion.quality && (
-            <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: `4px solid ${getStatusColor(selectedVersion.quality.status)}` }}>
+            <div style={{ marginBottom: '15px', padding: '10px', backgroundColor: '#f9f9f9', borderRadius: '8px', border: `1px solid ${getStatusColor(selectedVersion.quality.status)}` }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <strong>Đánh giá AI: {statusLabel[selectedVersion.quality.status]} ({selectedVersion.quality.score} điểm)</strong>
                 <span style={{ fontSize: '0.85rem', color: '#666' }}>Emoji: {selectedVersion.quality.emoji_count}</span>
@@ -128,6 +128,15 @@ const ResultDisplay = ({ results, metadata, onRegenerate, loading, onSave, saved
           <p className="content-text">{selectedVersion.content}</p>
           <p className="cta-text"><strong>CTA:</strong> {selectedVersion.cta}</p>
           <p className="hashtags-text">{selectedVersion.hashtags.join(' ')}</p>
+          
+          {selectedVersion.image_prompt && (
+            <div style={{ marginTop: '15px', padding: '10px', backgroundColor: '#f0f4f8', borderRadius: '6px', border: '1px dashed #cdd7e1' }}>
+              <strong style={{ fontSize: '0.85rem', color: '#555' }}>Gợi ý tạo ảnh (Image Prompt):</strong>
+              <p style={{ margin: '5px 0 0', fontSize: '0.85rem', color: '#333', fontFamily: 'monospace' }}>
+                {selectedVersion.image_prompt}
+              </p>
+            </div>
+          )}
 
           <div className="card-actions" style={{ marginTop: '20px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => handleCopy(selectedVersion)}>

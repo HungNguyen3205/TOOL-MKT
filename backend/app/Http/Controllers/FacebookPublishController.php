@@ -133,15 +133,15 @@ class FacebookPublishController extends Controller
 
         // If it was already queued/processing by another request, just return status
         if ($result->wasRecentlyCreated) {
-            // Dispatch to Queue immediately
-            PublishFacebookTextPost::dispatch($result->id);
+            // Dispatch synchronously for immediate publishing (no delay)
+            PublishFacebookTextPost::dispatchSync($result->id);
             
             return response()->json([
                 'success' => true,
-                'message' => 'Bài viết đã được đưa vào hàng đợi đăng Facebook.',
+                'message' => 'Bài viết đã được đăng lên Facebook thành công.',
                 'data' => [
                     'publication_id' => $result->id,
-                    'status' => 'queued'
+                    'status' => 'published'
                 ]
             ]);
         } else {

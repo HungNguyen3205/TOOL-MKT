@@ -51,6 +51,9 @@ class Post extends Model
         'design_suggestion',
         'visual_brief',
         'video_brief',
+        'import_batch_id',
+        'import_row_number',
+        'import_fingerprint',
     ];
 
     // Status Constants
@@ -100,11 +103,21 @@ class Post extends Model
         return $this->belongsTo(Workspace::class);
     }
 
+    public function importBatch()
+    {
+        return $this->belongsTo(ImportBatch::class);
+    }
+
     public function media()
     {
         return $this->belongsToMany(MediaAsset::class, 'post_media')
             ->withPivot(['position', 'role'])
             ->withTimestamps()
             ->orderBy('post_media.position');
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(PostComment::class);
     }
 }

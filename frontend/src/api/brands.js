@@ -1,62 +1,71 @@
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
+
+const parseApiResponse = async (res) => {
+  const contentType = res.headers.get('content-type');
+  let data;
+  if (contentType && contentType.includes('application/json')) {
+    data = await res.json();
+  } else {
+    data = { message: 'Lỗi phản hồi từ máy chủ (không phải JSON).', status: res.status };
+  }
+
+  if (!res.ok) {
+    throw data;
+  }
+  return data;
+};
+
 export const fetchBrands = async (params = {}) => {
   const query = new URLSearchParams(params).toString();
-  const res = await fetch(`/api/brands?${query}`);
-  if (!res.ok) throw await res.json();
-  return res.json();
+  const res = await fetch(`${API_BASE}/brands?${query}`);
+  return parseApiResponse(res);
 };
 
 export const fetchDefaultBrand = async () => {
-  const res = await fetch('/api/brands/default');
-  if (!res.ok) throw await res.json();
-  return res.json();
+  const res = await fetch(`${API_BASE}/brands/default`);
+  return parseApiResponse(res);
 };
 
 export const fetchBrand = async (id) => {
-  const res = await fetch(`/api/brands/${id}`);
-  if (!res.ok) throw await res.json();
-  return res.json();
+  const res = await fetch(`${API_BASE}/brands/${id}`);
+  return parseApiResponse(res);
 };
 
 export const createBrand = async (data) => {
-  const res = await fetch('/api/brands', {
+  const res = await fetch(`${API_BASE}/brands`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw await res.json();
-  return res.json();
+  return parseApiResponse(res);
 };
 
 export const updateBrand = async (id, data) => {
-  const res = await fetch(`/api/brands/${id}`, {
+  const res = await fetch(`${API_BASE}/brands/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw await res.json();
-  return res.json();
+  return parseApiResponse(res);
 };
 
 export const deleteBrand = async (id) => {
-  const res = await fetch(`/api/brands/${id}`, { method: 'DELETE' });
-  if (!res.ok) throw await res.json();
-  return res.json();
+  const res = await fetch(`${API_BASE}/brands/${id}`, { method: 'DELETE' });
+  return parseApiResponse(res);
 };
 
 export const setDefaultBrand = async (id) => {
-  const res = await fetch(`/api/brands/${id}/default`, { method: 'PATCH' });
-  if (!res.ok) throw await res.json();
-  return res.json();
+  const res = await fetch(`${API_BASE}/brands/${id}/default`, { method: 'PATCH' });
+  return parseApiResponse(res);
 };
 
 export const toggleBrandStatus = async (id, isActive) => {
-  const res = await fetch(`/api/brands/${id}/status`, {
+  const res = await fetch(`${API_BASE}/brands/${id}/status`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ is_active: isActive }),
   });
-  if (!res.ok) throw await res.json();
-  return res.json();
+  return parseApiResponse(res);
 };
 
 // Versions

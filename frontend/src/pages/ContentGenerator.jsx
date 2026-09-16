@@ -57,6 +57,7 @@ const ContentGenerator = () => {
         content: version.content,
         cta: version.cta,
         hashtags: version.hashtags,
+        image_prompt: version.image_prompt,
         objective: lastPayload.current.objective || 'sales',
         tone: lastPayload.current.tone || 'friendly',
         content_length: lastPayload.current.length || 'medium',

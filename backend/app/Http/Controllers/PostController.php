@@ -64,6 +64,37 @@ class PostController extends Controller
             $workflow->logActivity($post, 'created', null, $post->status);
             $workflow->createVersion($post, 'manual_edit', 'Initial creation');
 
+            if (!empty($data['image_prompt'])) {
+                $mediaAsset = \App\Models\MediaAsset::create([
+                    'brand_id' => $post->brand_id,
+                    'workspace_id' => $post->workspace_id,
+                    'type' => \App\Models\MediaAsset::TYPE_IMAGE,
+                    'status' => \App\Models\MediaAsset::STATUS_PROCESSING,
+                    'disk' => 'public',
+                    'path' => 'pending/' . uniqid() . '.jpg',
+                    'original_name' => 'generated.jpg',
+                    'stored_name' => 'generated.jpg',
+                    'mime_type' => 'image/jpeg',
+                    'size_bytes' => 0,
+                    'checksum' => md5(uniqid()),
+                    'metadata' => [
+                        'provider' => 'pollinations',
+                        'regenerate' => false,
+                        'provider_cookie' => \App\Models\Setting::where('key', 'PROVIDER_COOKIE')->value('value')
+                    ]
+                ]);
+
+                $post->media()->attach($mediaAsset->id, [
+                    'role' => 'processing',
+                    'position' => 0
+                ]);
+
+                $post->status = Post::STATUS_GENERATING_IMAGE;
+                $post->save();
+                
+                \App\Jobs\GeneratePostImageJob::dispatch($post->id, $mediaAsset->id, $data['image_prompt']);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Lưu bài viết thành công.',
@@ -161,46 +192,7 @@ class PostController extends Controller
         }
     }
 
-    public function regenerateImage(Request $request, $id)
-    {
-        $post = Post::find($id);
-        if (!$post) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Không tìm thấy bài viết.',
-                'error_code' => 'POST_NOT_FOUND'
-            ], 404);
-        }
 
-        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-            'image_prompt' => 'nullable|string|max:1000',
-            'aspect_ratio' => 'nullable|string',
-            'provider' => 'nullable|string|in:gemini'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Dữ liệu không hợp lệ.',
-                'error_code' => 'VALIDATION_FAILED',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-
-        if ($request->has('image_prompt')) {
-            $post->image_prompt = $request->image_prompt;
-        }
-        $post->status = Post::STATUS_GENERATING_IMAGE;
-        $post->save();
-
-        \App\Jobs\GeneratePostImageJob::dispatch($post);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Đang tạo lại hình ảnh...',
-            'data' => $post->fresh()
-        ]);
-    }
 
     public function duplicate($id, PostWorkflowService $workflow)
     {

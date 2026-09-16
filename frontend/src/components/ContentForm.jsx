@@ -260,7 +260,6 @@ const ContentForm = ({ onSubmit, loading }) => {
               <option value="event">Quảng bá sự kiện</option>
             </select>
           </div>
-
           <div className="form-group half">
             <label>Độ dài</label>
             <select name="length" value={formData.length} onChange={handleChange} disabled={loading}>
@@ -271,77 +270,99 @@ const ContentForm = ({ onSubmit, loading }) => {
           </div>
         </div>
 
-        <div className="advanced-options-container" style={{ marginTop: '10px', border: '1px solid #ddd', borderRadius: '8px', overflow: 'hidden' }}>
-          <button type="button" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} style={{ width: '100%', padding: '12px 15px', backgroundColor: '#f5f5f5', border: 'none', textAlign: 'left', fontWeight: 'bold', cursor: 'pointer', display: 'flex', justifyContent: 'space-between' }}>
-            <span>Tùy chỉnh nâng cao</span>
-            <span>{isAdvancedOpen ? '▲' : '▼'}</span>
+        <div className="advanced-content-panel">
+          <button type="button" className="advanced-toggle-btn" onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div className="advanced-toggle-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+              </div>
+              Tùy chỉnh nâng cao
+            </div>
+            <div className={`advanced-arrow ${isAdvancedOpen ? 'open' : ''}`}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
           </button>
           
           {isAdvancedOpen && (
-            <div style={{ padding: '15px', backgroundColor: '#fafafa' }}>
+            <div className="advanced-body">
               
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Mẫu nội dung (Template)</label>
-                  <select name="content_template_id" value={formData.content_template_id} onChange={(e) => handleTemplateChange(e.target.value)} disabled={loading || loadingTemplates || !formData.brand_id}>
-                    <option value="">-- Không sử dụng mẫu --</option>
-                    {templates.filter(t => t.objective === formData.objective).map(t => (
-                      <option key={t.id} value={t.id}>{t.name}</option>
-                    ))}
-                  </select>
+              {/* Nhóm 1: Cấu hình chung */}
+              <div className="advanced-section-card">
+                <div className="advanced-section-title">
+                  <span style={{ fontSize: '16px' }}>⚙️</span> Cấu hình chung
                 </div>
-                <div className="form-group half">
-                  <label>Số lượng phiên bản</label>
-                  <input type="number" name="number_of_versions" value={formData.number_of_versions} onChange={handleAdvancedChange} min="1" max="5" disabled={loading} />
+                <div className="advanced-grid-2">
+                  <div className="advanced-field">
+                    <label>Mẫu nội dung (Template)</label>
+                    <select name="content_template_id" value={formData.content_template_id} onChange={(e) => handleTemplateChange(e.target.value)} disabled={loading || loadingTemplates || !formData.brand_id}>
+                      <option value="">-- Không sử dụng mẫu --</option>
+                      {templates.filter(t => t.objective === formData.objective).map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="advanced-field">
+                    <label>Số lượng phiên bản</label>
+                    <input type="number" name="number_of_versions" value={formData.number_of_versions} onChange={handleAdvancedChange} min="1" max="5" disabled={loading} />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Khách hàng mục tiêu</label>
-                  <input type="text" name="target_audience" value={formData.target_audience} onChange={handleAdvancedChange} maxLength="1000" placeholder="Ví dụ: Sinh viên 18–24 tuổi..." disabled={loading} />
+              {/* Nhóm 2: Định hướng bài viết */}
+              <div className="advanced-section-card">
+                <div className="advanced-section-title">
+                  <span style={{ color: '#b45cff', fontSize: '16px' }}>🎯</span> Định hướng bài viết
                 </div>
-
-                <div className="form-group half">
+                <div className="advanced-field">
+                  <label>Khách hàng mục tiêu</label>
+                  <textarea name="target_audience" style={{ minHeight: '110px' }} value={formData.target_audience} onChange={handleAdvancedChange} placeholder="Ví dụ: Người mới tập yoga, Dân văn phòng..." disabled={loading}></textarea>
+                </div>
+                <div className="advanced-field">
                   <label>Giọng văn</label>
                   <select name="tone" value={formData.tone} onChange={handleAdvancedChange} disabled={loading}>
                     <option value="professional">Chuyên nghiệp</option>
-                    <option value="friendly">Thân thiện</option>
-                    <option value="youthful">Trẻ trung</option>
-                    <option value="humorous">Hài hước</option>
-                    <option value="luxurious">Sang trọng</option>
+                    <option value="friendly">Thân thiện / Gần gũi</option>
+                    <option value="youthful">Trẻ trung / Năng động</option>
+                    <option value="humorous">Hài hước / Dí dỏm</option>
+                    <option value="luxurious">Sang trọng / Đẳng cấp</option>
                     <option value="inspirational">Truyền cảm hứng</option>
                   </select>
                 </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
+                <div className="advanced-field">
                   <label>Hướng dẫn CTA</label>
-                  <input type="text" name="cta_instruction" value={formData.cta_instruction} onChange={handleAdvancedChange} placeholder="Ví dụ: Kêu gọi click vào link..." disabled={loading} />
+                  <textarea name="cta_instruction" style={{ minHeight: '90px' }} value={formData.cta_instruction} onChange={handleAdvancedChange} placeholder="Ví dụ: Gọi ngay hotline, Đăng ký link bên dưới..." disabled={loading}></textarea>
                 </div>
+              </div>
 
-                <div className="form-group half">
+              {/* Nhóm 3: Ràng buộc nội dung */}
+              <div className="advanced-section-card">
+                <div className="advanced-section-title">
+                  <span style={{ color: '#ffb547', fontSize: '16px' }}>⚠️</span> Ràng buộc nội dung
+                </div>
+                <div className="advanced-field">
                   <label>Hashtag</label>
-                  <input type="text" name="hashtag_instruction" value={formData.hashtag_instruction} onChange={handleAdvancedChange} placeholder="Ví dụ: #Yoga #Suckhoe" disabled={loading} />
+                  <span className="field-desc">Các hashtag cách nhau bằng khoảng trắng</span>
+                  <textarea name="hashtag_instruction" style={{ minHeight: '72px' }} value={formData.hashtag_instruction} onChange={handleAdvancedChange} placeholder="#Yoga #Health" disabled={loading}></textarea>
                 </div>
-              </div>
-
-              <div className="form-group">
-                <label>Từ khóa bắt buộc</label>
-                <input type="text" name="required_keywords" value={formData.required_keywords} onChange={handleAdvancedChange} placeholder="Phân tách bằng dấu phẩy" disabled={loading} />
-              </div>
-
-              <div className="form-group">
-                <label>Nội dung cần tránh</label>
-                <textarea name="excluded_content" value={formData.excluded_content} onChange={handleAdvancedChange} rows="2" placeholder="Mỗi yêu cầu nằm trên một dòng." disabled={loading}></textarea>
-              </div>
-
-              <div className="form-group" style={{marginTop: 10}}>
-                <label style={{display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontWeight: 'normal'}}>
-                  <input type="checkbox" name="use_contact_info" checked={formData.use_contact_info} onChange={handleAdvancedChange} style={{width: 'auto'}} disabled={loading} />
-                  Chèn thông tin liên hệ của thương hiệu vào bài viết
-                </label>
+                <div className="advanced-field">
+                  <label>Từ khóa bắt buộc</label>
+                  <span className="field-desc">Mỗi từ khóa cách nhau bằng dấu phẩy</span>
+                  <textarea name="required_keywords" style={{ minHeight: '72px' }} value={formData.required_keywords} onChange={handleAdvancedChange} placeholder="Từ khóa 1, từ khóa 2..." disabled={loading}></textarea>
+                </div>
+                <div className="advanced-field">
+                  <label>Nội dung cần tránh</label>
+                  <span className="field-desc">Mỗi dòng 1 ý</span>
+                  <textarea name="excluded_content" style={{ minHeight: '90px' }} value={formData.excluded_content} onChange={handleAdvancedChange} placeholder="Cam kết 100%&#10;Giảm cân cấp tốc..." disabled={loading}></textarea>
+                </div>
+                <div className="advanced-field" style={{ marginTop: '20px' }}>
+                  <label className="advanced-checkbox">
+                    <input type="checkbox" name="use_contact_info" checked={formData.use_contact_info} onChange={handleAdvancedChange} disabled={loading} />
+                    <div className="checkbox-box">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <span className="checkbox-label">📞 Chèn thông tin liên hệ của thương hiệu vào bài viết</span>
+                  </label>
+                </div>
               </div>
               
             </div>

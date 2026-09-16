@@ -30,7 +30,7 @@ class FacebookGraphService
         $this->redirectUri = $dbSettings['FACEBOOK_REDIRECT_URI'] ?? config('services.facebook.redirect');
         
         $this->graphVersion = config('services.facebook.graph_version', 'v20.0');
-        $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement');
+        $this->scopes = config('services.facebook.scopes', 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_read_user_content');
         $this->timeout = config('services.facebook.timeout', 30);
         
         $this->baseUrl = "https://graph.facebook.com/{$this->graphVersion}";
@@ -196,6 +196,58 @@ class FacebookGraphService
             $this->logError("Publish Photo Post failed for {$pageId}", $response);
             $error = $response->json('error');
             throw new Exception($error['message'] ?? "Failed to publish photo post to Facebook.");
+        }
+
+        return $response->json();
+    }
+
+    public function getPostComments(string $pageToken, string $postId): array
+    {
+        if (str_starts_with($pageToken, 'dummy_page_token_')) {
+            return ['data' => []];
+        }
+
+        $response = Http::timeout($this->timeout)->get("{$this->baseUrl}/{$postId}/comments", [
+            'access_token' => $pageToken,
+            'fields' => 'id,message,created_time,from',
+            'order' => 'reverse_chronological'
+        ]);
+
+        if ($response->failed()) {
+            $this->logError("Get Post Comments failed for {$postId}", $response);
+            $error = $response->json('error');
+            throw new Exception($error['message'] ?? "Failed to fetch comments.");
+        }
+
+        return $response->json();
+    }
+
+    public function postComment(string $pageToken, string $targetId, string $message, ?string $photoPath = null): array
+    {
+        if (str_starts_with($pageToken, 'dummy_page_token_')) {
+            sleep(1);
+            return ['id' => 'dummy_comment_' . time()];
+        }
+
+        $payload = [
+            'access_token' => $pageToken,
+            'message' => $message,
+        ];
+
+        $request = Http::timeout($this->timeout);
+
+        if ($photoPath && file_exists($photoPath)) {
+            $request = $request->attach(
+                'attachment', file_get_contents($photoPath), basename($photoPath)
+            );
+        }
+
+        $response = $request->post("{$this->baseUrl}/{$targetId}/comments", $payload);
+
+        if ($response->failed()) {
+            $this->logError("Post Comment failed for target {$targetId}", $response);
+            $error = $response->json('error');
+            throw new Exception($error['message'] ?? "Failed to post comment.");
         }
 
         return $response->json();

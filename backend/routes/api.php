@@ -93,6 +93,14 @@ Route::get('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandCo
 Route::put('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandContentExampleController::class, 'update']);
 Route::delete('/brands/{brandId}/examples/{itemId}', [\App\Http\Controllers\BrandContentExampleController::class, 'destroy']);
 
+    // Content Templates
+    Route::apiResource('content-templates', App\Http\Controllers\Api\ContentTemplateController::class);
+
+    // Bulk Import
+    Route::post('/google-drive/verify-folder', [App\Http\Controllers\Api\BulkImportController::class, 'verifyFolder']);
+    Route::post('/imports/preview', [App\Http\Controllers\Api\BulkImportController::class, 'preview']);
+    Route::post('/imports/confirm', [App\Http\Controllers\Api\BulkImportController::class, 'confirm']);
+
 // Content Template API
 Route::get('/brands/{brandId}/templates', [\App\Http\Controllers\ContentTemplateController::class, 'index']);
 Route::post('/brands/{brandId}/templates', [\App\Http\Controllers\ContentTemplateController::class, 'store']);
@@ -130,5 +138,18 @@ Route::get('/posts/{post}/publications', [\App\Http\Controllers\FacebookPublishC
 Route::get('/publications', [\App\Http\Controllers\FacebookPublishController::class, 'allHistory']);
 Route::post('/publications/{publication}/retry', [\App\Http\Controllers\FacebookPublishController::class, 'retry']);
 
+// Comment Management API (New)
+Route::get('/posts/{post}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'index']);
+Route::post('/posts/{post}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'store']);
+Route::prefix('comments')->group(function () {
+    Route::get('/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'show']);
+    Route::put('/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'update']);
+    Route::patch('/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'update']);
+    Route::delete('/{comment}', [\App\Http\Controllers\Api\PostCommentController::class, 'destroy']);
+    
+    Route::post('/{comment}/publish-now', [\App\Http\Controllers\Api\PostCommentController::class, 'publishNow']);
+    Route::post('/{comment}/schedule', [\App\Http\Controllers\Api\PostCommentController::class, 'schedule']);
+    Route::post('/{comment}/cancel', [\App\Http\Controllers\Api\PostCommentController::class, 'cancel']);
+});
 Route::get('/settings', [\App\Http\Controllers\SettingsController::class, 'index']);
 Route::post('/settings', [\App\Http\Controllers\SettingsController::class, 'update']);

@@ -33,7 +33,7 @@ const CampaignWizard = () => {
       {/* Progress Indicator */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--dn-space-8)', position: 'relative' }}>
         <div style={{ position: 'absolute', top: '12px', left: '0', right: '0', height: '2px', backgroundColor: 'var(--dn-border-color)', zIndex: 0 }}></div>
-        <div style={{ position: 'absolute', top: '12px', left: '0', width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`, height: '2px', backgroundColor: 'var(--dn-color-primary)', zIndex: 1, transition: 'width var(--dn-transition-normal)' }}></div>
+        <div style={{ position: 'absolute', top: '12px', left: '0', width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`, height: '2px', backgroundColor: 'var(--dn-color-primary)', zIndex: 1 }}></div>
         
         {steps.map((step, index) => {
           const isCompleted = index + 1 < currentStep;

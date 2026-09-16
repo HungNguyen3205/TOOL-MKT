@@ -100,6 +100,17 @@ class PublishScheduledPostJob implements ShouldQueue
             'published_at' => now(),
             'publish_error' => null
         ]);
+
+        // Schedule after_post comments
+        $post->comments()
+            ->where('status', \App\Models\PostComment::STATUS_SCHEDULED)
+            ->where('schedule_type', 'after_post')
+            ->get()
+            ->each(function ($comment) {
+                $comment->update([
+                    'scheduled_at' => now()->addMinutes($comment->delay_minutes ?? 5)
+                ]);
+            });
     }
 
     public function failed(\Throwable $exception)

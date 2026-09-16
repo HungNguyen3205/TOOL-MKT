@@ -4,6 +4,7 @@ import { checkHealth } from './api';
 import ContentGenerator from './pages/ContentGenerator';
 import PostList from './pages/PostList';
 import PostEditor from './pages/PostEditor';
+import PostImport from './pages/PostImport';
 import PostPublish from './pages/PostPublish';
 import BrandList from './pages/BrandList';
 import BrandEditor from './pages/BrandEditor';
@@ -19,6 +20,7 @@ import CampaignWizard from './pages/CampaignWizard';
 import MediaLibrary from './pages/MediaLibrary';
 import ImageStudio from './pages/ImageStudio';
 import VideoStudioPage from './pages/VideoStudioPage';
+import CommentManagement from './pages/CommentManagement';
 import { Toaster } from 'react-hot-toast';
 import AppLayout from './components/layout/AppLayout';
 import './styles/design-tokens.css';
@@ -59,6 +61,7 @@ function App() {
         <Route path="/media" element={<MediaLibrary />} />
         <Route path="/create-content" element={<ContentGenerator />} />
         <Route path="/posts" element={<PostList />} />
+        <Route path="/posts/import" element={<PostImport />} />
         <Route path="/posts/new" element={<PostEditor />} />
         <Route path="/posts/:id/edit" element={<PostEditor />} />
         <Route path="/posts/:id/publish" element={<PostPublish />} />
@@ -73,7 +76,14 @@ function App() {
         <Route path="/publications" element={<PublicationHistory />} />
         <Route path="/image-studio" element={<ImageStudio />} />
         <Route path="/video-studio" element={<VideoStudioPage />} />
+        <Route path="/comments" element={<CommentManagement />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={
+          <div style={{ padding: '40px', textAlign: 'center', color: 'var(--dn-text-secondary)' }}>
+            <h2 style={{ color: 'var(--dn-text-primary)', marginBottom: '10px' }}>Đang Phát Triển</h2>
+            <p>Tính năng này hiện đang được xây dựng và sẽ sớm ra mắt trong các phiên bản tiếp theo.</p>
+          </div>
+        } />
       </Routes>
     </AppLayout>
   );
