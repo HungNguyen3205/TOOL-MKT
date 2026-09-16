@@ -138,7 +138,15 @@ Route::get('/posts/{post}/publications', [\App\Http\Controllers\FacebookPublishC
 Route::get('/publications', [\App\Http\Controllers\FacebookPublishController::class, 'allHistory']);
 Route::post('/publications/{publication}/retry', [\App\Http\Controllers\FacebookPublishController::class, 'retry']);
 
-// Comment Management API (New)
+// Comment Management API used by the global CommentManagement screen.
+// Keep these static routes before /comments/{comment} to avoid route-model collisions.
+Route::get('/comments/scheduled', [\App\Http\Controllers\Api\CommentController::class, 'getScheduled']);
+Route::post('/comments/scheduled', [\App\Http\Controllers\Api\CommentController::class, 'schedule']);
+Route::delete('/comments/scheduled/{id}', [\App\Http\Controllers\Api\CommentController::class, 'destroyScheduled']);
+Route::get('/comments/live/{publicationId}', [\App\Http\Controllers\Api\CommentController::class, 'getLiveComments']);
+Route::post('/comments/reply', [\App\Http\Controllers\Api\CommentController::class, 'replyToComment']);
+
+// Comment Management API (Post editor)
 Route::get('/posts/{post}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'index']);
 Route::post('/posts/{post}/comments', [\App\Http\Controllers\Api\PostCommentController::class, 'store']);
 Route::prefix('comments')->group(function () {
