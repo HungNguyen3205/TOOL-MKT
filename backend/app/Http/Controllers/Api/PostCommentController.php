@@ -44,16 +44,22 @@ class PostCommentController extends Controller
             ], 422);
         }
 
-        $status = PostComment::STATUS_DRAFT;
-        if ($request->scheduled_at || $request->schedule_type === 'after_post') {
-            $status = PostComment::STATUS_SCHEDULED;
+        $scheduleType = $request->schedule_type ?? 'absolute';
+        $scheduledAt = $request->scheduled_at;
+
+        if ($scheduleType === 'after_post' && ($post->facebook_post_id || $post->last_facebook_post_id)) {
+            $scheduledAt = now()->addMinutes((int) ($request->delay_minutes ?? 5));
         }
+
+        $status = ($scheduledAt || $scheduleType === 'after_post')
+            ? PostComment::STATUS_SCHEDULED
+            : PostComment::STATUS_DRAFT;
 
         $comment = $post->comments()->create([
             'content' => $request->content,
             'status' => $status,
-            'scheduled_at' => $request->scheduled_at,
-            'schedule_type' => $request->schedule_type ?? 'absolute',
+            'scheduled_at' => $scheduledAt,
+            'schedule_type' => $scheduleType,
             'delay_minutes' => $request->delay_minutes,
             'facebook_page_id' => $post->facebook_page_id,
             'created_by' => auth()->id() ?? null,
@@ -180,11 +186,21 @@ class PostCommentController extends Controller
             ], 422);
         }
 
+        $scheduleType = $request->schedule_type ?? 'absolute';
+        $scheduledAt = $request->scheduled_at;
+        $post = $comment->post;
+
+        if ($scheduleType === 'after_post' && ($post?->facebook_post_id || $post?->last_facebook_post_id)) {
+            $scheduledAt = now()->addMinutes((int) ($request->delay_minutes ?? 5));
+        }
+
         $comment->update([
             'status' => PostComment::STATUS_SCHEDULED,
-            'schedule_type' => $request->schedule_type ?? 'absolute',
-            'scheduled_at' => $request->scheduled_at,
+            'schedule_type' => $scheduleType,
+            'scheduled_at' => $scheduledAt,
             'delay_minutes' => $request->delay_minutes,
+            'last_error_code' => null,
+            'last_error_message' => null,
         ]);
 
         return response()->json([
