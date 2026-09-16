@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('posts:publish-due')->everyMinute()->withoutOverlapping();
+Schedule::command('comments:publish-due')->everyMinute()->withoutOverlapping();

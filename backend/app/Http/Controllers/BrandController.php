@@ -39,26 +39,41 @@ class BrandController extends Controller
 
     public function store(StoreBrandRequest $request)
     {
-        $data = $request->validated();
-        
-        if (!empty($data['is_default'])) {
-            Brand::where('id', '!=', 0)->update(['is_default' => false]);
+        try {
+            $brand = \Illuminate\Support\Facades\DB::transaction(function () use ($request) {
+                $data = $request->validated();
+                
+                if (!empty($data['is_default'])) {
+                    Brand::where('id', '!=', 0)->update(['is_default' => false]);
+                }
+
+                $brand = Brand::create($data);
+                $brand = $brand->fresh();
+
+                $brand->versions()->create([
+                    'version_number' => 1,
+                    'snapshot' => $brand->toArray(),
+                    'change_summary' => 'Created brand',
+                    'created_by' => auth()->id() ?? null,
+                ]);
+
+                return $brand;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tạo thương hiệu thành công.',
+                'data' => new BrandResource($brand)
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Lỗi khi tạo thương hiệu: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi tạo thương hiệu.',
+                'error_code' => 'BRAND_CREATE_ERROR',
+                'error_details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        $brand = Brand::create($data);
-
-        $brand->versions()->create([
-            'version_number' => 1,
-            'snapshot' => $brand->toArray(),
-            'change_summary' => 'Created brand',
-            'created_by' => auth()->id() ?? null,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Tạo thương hiệu thành công.',
-            'data' => new BrandResource($brand)
-        ]);
     }
 
     public function show($id)
@@ -91,38 +106,52 @@ class BrandController extends Controller
             ], 404);
         }
 
-        $data = $request->validated();
+        try {
+            $brand = \Illuminate\Support\Facades\DB::transaction(function () use ($request, $brand) {
+                $data = $request->validated();
 
-        if (!empty($data['is_default']) && !$brand->is_default) {
-            Brand::where('id', '!=', $brand->id)->update(['is_default' => false]);
-        }
+                if (!empty($data['is_default']) && !$brand->is_default) {
+                    Brand::where('id', '!=', $brand->id)->update(['is_default' => false]);
+                }
 
-        $oldData = $brand->only([
-            'name', 'brand_type', 'industry', 'website', 'hotline', 'email', 'address', 'description', 
-            'products_services', 'positioning', 'unique_value_proposition', 'brand_story', 'brand_personality', 
-            'target_audience', 'tone', 'slogan', 'default_cta', 'service_areas', 'competitive_advantages',
-            'customer_pain_points', 'customer_desires', 'customer_objections', 'default_language', 'emoji_limit',
-            'preferred_addressing', 'platform_rules', 'default_hashtags', 'required_keywords', 'prohibited_terms',
-            'writing_rules'
-        ]);
+                $oldData = $brand->only([
+                    'name', 'brand_type', 'industry', 'website', 'hotline', 'email', 'address', 'description', 
+                    'products_services', 'positioning', 'unique_value_proposition', 'brand_story', 'brand_personality', 
+                    'target_audience', 'tone', 'slogan', 'default_cta', 'service_areas', 'competitive_advantages',
+                    'customer_pain_points', 'customer_desires', 'customer_objections', 'default_language', 'emoji_limit',
+                    'preferred_addressing', 'platform_rules', 'default_hashtags', 'required_keywords', 'prohibited_terms',
+                    'writing_rules'
+                ]);
 
-        $brand->update($data);
+                $brand->update($data);
 
-        $newData = $brand->fresh()->only(array_keys($oldData));
-        if ($oldData !== $newData) {
-            $brand->versions()->create([
-                'version_number' => $brand->versions()->max('version_number') + 1,
-                'snapshot' => $brand->fresh()->toArray(),
-                'change_summary' => 'Updated brand profile',
-                'created_by' => auth()->id() ?? null,
+                $newData = $brand->fresh()->only(array_keys($oldData));
+                if ($oldData !== $newData) {
+                    $brand->versions()->create([
+                        'version_number' => $brand->versions()->max('version_number') + 1,
+                        'snapshot' => $brand->fresh()->toArray(),
+                        'change_summary' => 'Updated brand profile',
+                        'created_by' => auth()->id() ?? null,
+                    ]);
+                }
+
+                return $brand->fresh();
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật thương hiệu thành công.',
+                'data' => new BrandResource($brand)
             ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Lỗi khi cập nhật thương hiệu: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã xảy ra lỗi khi cập nhật thương hiệu.',
+                'error_code' => 'BRAND_UPDATE_ERROR',
+                'error_details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật thương hiệu thành công.',
-            'data' => new BrandResource($brand)
-        ]);
     }
 
     public function destroy($id)

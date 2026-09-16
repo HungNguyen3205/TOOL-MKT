@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import logoImg from '../../images/logo.png';
 
 const Sidebar = ({ isCollapsed, healthStatus }) => {
   const location = useLocation();
@@ -16,6 +17,7 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
       items: [
         { name: 'Thương hiệu', path: '/brands', icon: '🔖' },
         { name: 'Quản lý bài', path: '/posts', icon: '📝' },
+        { name: 'Nhập lịch nội dung', path: '/posts/import', icon: '📥' },
         { name: 'Tạo nội dung AI', path: '/create-content', icon: '✨' },
         { name: 'Chiến dịch', path: '/campaigns', icon: '🚀' },
         { name: 'Cấu Hình Post & Content', path: '/settings', icon: '⚙️' }
@@ -27,7 +29,7 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
         { name: 'Trang FB', path: '/facebook-pages', icon: '🚩' },
         { name: 'Nhóm Trang', path: '/page-groups', icon: '👥' },
         { name: 'Quản lý Token', path: '/tokens', icon: '🔑' },
-        { type: 'button', name: 'Tin nhắn & Bình luận', icon: '💬', color: '#8b5cf6' }
+        { name: 'Tin nhắn & Bình luận', path: '/comments', icon: '💬', color: 'var(--dn-color-primary)' }
       ]
     },
     {
@@ -58,17 +60,19 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
   ];
 
   return (
-    <aside className={`dn-sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ backgroundColor: '#111827', color: '#9ca3af', overflowY: 'auto' }}>
-      <div className="dn-sidebar-header" style={{ borderBottom: 'none', padding: '20px' }}>
-        <div className="dn-nav-icon" style={{ fontSize: '24px', backgroundColor: '#fff', borderRadius: '8px', padding: '4px' }}>♾️</div>
-        {!isCollapsed && <span className="dn-sidebar-logo-text" style={{ fontSize: '20px', fontWeight: 'bold', color: '#fff' }}>DANAVA Page</span>}
+    <aside className={`dn-sidebar ${isCollapsed ? 'collapsed' : ''}`} style={{ backgroundColor: 'var(--dn-bg-app)', color: 'var(--dn-text-secondary)', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+      <div className="dn-sidebar-header" style={{ borderBottom: 'none', padding: 'var(--dn-space-5)' }}>
+        <div className="dn-nav-icon" style={{ backgroundColor: 'transparent', borderRadius: 'var(--dn-radius-sm)', padding: '0', display: 'flex', alignItems: 'center' }}>
+          <img src={logoImg} alt="DANAVA Logo" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+        </div>
+        {!isCollapsed && <span className="dn-sidebar-logo-text" style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--dn-text-primary)' }}>DANAVA Page</span>}
       </div>
       
-      <div className="dn-sidebar-nav" style={{ padding: '0 15px' }}>
+      <div className="dn-sidebar-nav" style={{ padding: '0 var(--dn-space-4)' }}>
         {menuCategories.map((category, idx) => (
-          <div key={idx} style={{ marginBottom: '20px' }}>
+          <div key={idx} style={{ marginBottom: 'var(--dn-space-5)' }}>
             {!isCollapsed && (
-              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#6b7280', letterSpacing: '0.05em', marginBottom: '10px', paddingLeft: '10px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--dn-text-muted)', letterSpacing: '0.05em', marginBottom: 'var(--dn-space-2)', paddingLeft: '10px' }}>
                 {category.title}
               </div>
             )}
@@ -82,7 +86,7 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
                         backgroundColor: item.color,
                         color: '#fff',
                         border: 'none',
-                        borderRadius: '8px',
+                        borderRadius: 'var(--dn-radius-sm)',
                         padding: '10px',
                         display: 'flex',
                         alignItems: 'center',
@@ -111,26 +115,26 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
                       alignItems: 'center',
                       gap: '10px',
                       padding: '10px',
-                      borderRadius: '8px',
+                      borderRadius: 'var(--dn-radius-sm)',
                       textDecoration: 'none',
-                      color: isActive ? '#fff' : '#9ca3af',
-                      backgroundColor: isActive ? 'rgba(255,255,255,0.05)' : 'transparent',
+                      color: isActive ? 'var(--dn-text-primary)' : 'var(--dn-text-secondary)',
+                      backgroundColor: isActive ? 'var(--dn-color-primary-light)' : 'transparent',
                       transition: 'all 0.2s'
                     }}
-                    onMouseOver={e => { if(!isActive) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.02)' }}
+                    onMouseOver={e => { if(!isActive) e.currentTarget.style.backgroundColor = 'var(--dn-bg-surface-hover)' }}
                     onMouseOut={e => { if(!isActive) e.currentTarget.style.backgroundColor = 'transparent' }}
                     title={isCollapsed ? item.name : ''}
                   >
                     <span style={{ 
                       width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      backgroundColor: isActive ? '#2563eb' : 'rgba(255,255,255,0.05)', 
-                      borderRadius: '8px', color: isActive ? '#fff' : '#9ca3af'
+                      backgroundColor: isActive ? 'var(--dn-color-primary)' : 'var(--dn-bg-surface)', 
+                      borderRadius: 'var(--dn-radius-sm)', color: isActive ? '#fff' : 'var(--dn-text-secondary)'
                     }}>{item.icon}</span>
                     
                     {!isCollapsed && <span style={{ flex: 1, fontWeight: isActive ? '500' : 'normal' }}>{item.name}</span>}
                     
                     {!isCollapsed && item.badge && (
-                      <span style={{ backgroundColor: '#ef4444', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                      <span style={{ backgroundColor: 'var(--dn-color-danger)', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
                         {item.badge}
                       </span>
                     )}
@@ -146,43 +150,43 @@ const Sidebar = ({ isCollapsed, healthStatus }) => {
         <div style={{ padding: '15px', marginTop: 'auto' }}>
           
           {/* License Box */}
-          <div style={{ backgroundColor: '#1f2937', borderRadius: '10px', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ backgroundColor: 'var(--dn-bg-surface)', borderRadius: 'var(--dn-radius-sm)', padding: '12px', display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: 'var(--dn-radius-sm)', backgroundColor: 'var(--dn-bg-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               🛡️
             </div>
             <div>
-              <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '13px' }}>Chưa kích hoạt</div>
-              <div style={{ color: '#6b7280', fontSize: '12px' }}>—</div>
+              <div style={{ color: 'var(--dn-text-primary)', fontWeight: 'bold', fontSize: '13px' }}>Chưa kích hoạt</div>
+              <div style={{ color: 'var(--dn-text-muted)', fontSize: '12px' }}>—</div>
             </div>
           </div>
 
           {/* Lang & Theme */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <button style={{ flex: 1, backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
+            <button style={{ flex: 1, backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-secondary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
               文 Tiếng Việt
             </button>
-            <button style={{ flex: 1, backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
+            <button style={{ flex: 1, backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-secondary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px', cursor: 'pointer' }}>
               ☀️ Sáng
             </button>
           </div>
 
           {/* Update Info */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
-            <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '13px' }}>DANAVA Page v1.0.0</div>
-            <button style={{ backgroundColor: '#1f2937', color: '#8b5cf6', border: '1px solid #374151', borderRadius: '8px', padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+            <div style={{ color: 'var(--dn-text-primary)', fontWeight: 'bold', fontSize: '13px' }}>DANAVA Page v1.0.0</div>
+            <button style={{ backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-color-primary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
               ↻ Kiểm tra cập nhật
             </button>
           </div>
 
           {/* Zoom Controls */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <button style={{ flex: 1, backgroundColor: '#1f2937', color: '#fff', border: '1px solid #374151', borderRadius: '8px', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
-            <button style={{ flex: 2, backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: '8px', padding: '8px', cursor: 'default' }}>100%</button>
-            <button style={{ flex: 1, backgroundColor: '#1f2937', color: '#fff', border: '1px solid #374151', borderRadius: '8px', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
+            <button style={{ flex: 1, backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-primary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>-</button>
+            <button style={{ flex: 2, backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-secondary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', cursor: 'default' }}>100%</button>
+            <button style={{ flex: 1, backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-primary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', cursor: 'pointer', fontWeight: 'bold' }}>+</button>
           </div>
 
           {/* Collapse Bottom */}
-          <button style={{ width: '100%', backgroundColor: '#1f2937', color: '#9ca3af', border: '1px solid #374151', borderRadius: '8px', padding: '8px', cursor: 'pointer' }}>
+          <button style={{ width: '100%', backgroundColor: 'var(--dn-bg-surface)', color: 'var(--dn-text-secondary)', border: '1px solid var(--dn-border-color)', borderRadius: 'var(--dn-radius-sm)', padding: '8px', cursor: 'pointer' }}>
             ⌄
           </button>
         </div>

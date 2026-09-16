@@ -31,12 +31,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ImageGenerationProviderInterface::class, function ($app) {
             $provider = config('services.ai.image_provider', 'pollinations');
             
+            if ($provider === 'gemini') {
+                return new \App\Services\ImageGeneration\GeminiImageProvider();
+            }
+            
             if ($provider === 'pollinations') {
                 return new \App\Services\ImageGeneration\PollinationsImageProvider();
             }
             
             // Fallback default
-            return new \App\Services\ImageGeneration\PollinationsImageProvider();
+            return new \App\Services\ImageGeneration\GeminiImageProvider();
         });
 
         $this->app->bind(VideoGenerationProviderInterface::class, function ($app) {

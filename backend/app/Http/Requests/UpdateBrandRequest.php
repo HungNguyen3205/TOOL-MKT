@@ -81,9 +81,19 @@ class UpdateBrandRequest extends FormRequest
 
     protected function prepareForValidation()
     {
+        $slug = $this->input('slug') ? Str::slug($this->input('slug')) : Str::slug($this->input('name'));
+        
+        $website = $this->input('website');
+        if ($website && !preg_match('~^(?:f|ht)tps?://~i', $website)) {
+            $website = 'https://' . $website;
+        }
+
         $this->merge([
-            'slug' => $this->input('slug') ? Str::slug($this->input('slug')) : Str::slug($this->input('name')),
+            'slug' => $slug,
             'name' => trim($this->input('name', '')),
+            'website' => $website,
+            'is_default' => filter_var($this->input('is_default'), FILTER_VALIDATE_BOOLEAN),
+            'is_active' => filter_var($this->input('is_active', true), FILTER_VALIDATE_BOOLEAN),
         ]);
 
         $this->normalizeArray('default_hashtags', true);
@@ -100,21 +110,27 @@ class UpdateBrandRequest extends FormRequest
 
     private function normalizeArray($field, $isHashtag = false)
     {
-        $data = $this->input($field, []);
-        if (is_array($data)) {
-            $data = array_map('trim', $data);
-            $data = array_filter($data);
-            if ($isHashtag) {
-                $data = array_map(function($tag) {
-                    $tag = str_replace(' ', '', $tag);
-                    return str_starts_with($tag, '#') ? $tag : '#' . $tag;
-                }, $data);
-            }
-            $data = array_values(array_unique($data));
-            $this->merge([$field => empty($data) ? null : $data]);
-        } else {
+        $data = $this->input($field);
+        if ($data === null || $data === '') {
             $this->merge([$field => null]);
+            return;
         }
+        
+        if (!is_array($data)) {
+            $data = is_string($data) ? explode(str_contains($data, "\n") ? "\n" : ",", $data) : [$data];
+        }
+
+        $data = array_map('trim', $data);
+        $data = array_filter($data, fn($value) => !is_null($value) && $value !== '');
+        
+        if ($isHashtag) {
+            $data = array_map(function($tag) {
+                $tag = str_replace(' ', '', $tag);
+                return str_starts_with($tag, '#') ? $tag : '#' . $tag;
+            }, $data);
+        }
+        $data = array_values(array_unique($data));
+        $this->merge([$field => empty($data) ? null : $data]);
     }
 
     protected function failedValidation(Validator $validator)

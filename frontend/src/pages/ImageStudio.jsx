@@ -133,7 +133,7 @@ const ImageStudio = () => {
           </div>
 
           {selectedPost && (
-            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', borderLeft: '4px solid #3b82f6' }}>
+            <div style={{ marginTop: '20px', padding: '15px', backgroundColor: 'rgba(59, 130, 246, 0.1)', borderRadius: '8px', border: '1px solid #3b82f6' }}>
               <p style={{ margin: 0, fontSize: '0.9rem', color: '#93c5fd' }}>
                 Hệ thống sẽ đọc hiểu nội dung bài viết <strong>"{selectedPost.title}"</strong> để tự động trích xuất các ý tưởng hình ảnh phù hợp.
               </p>

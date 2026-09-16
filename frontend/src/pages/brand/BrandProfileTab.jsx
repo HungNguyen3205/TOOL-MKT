@@ -29,18 +29,24 @@ const BrandProfileTab = ({ brand, setBrand, isNew, onSaved }) => {
     setErrorMsg(null);
     
     try {
+      // Create a clean payload without read-only fields
+      const { id, created_at, updated_at, deleted_at, logo_url, logo_path, profile_completeness, templates_count, knowledge_items_count, content_examples_count, versions_count, ...cleanBrand } = brand;
+
       const payload = {
-        ...brand,
-        service_areas: typeof brand.service_areas === 'string' ? brand.service_areas.split(',').map(s=>s.trim()).filter(s=>s) : brand.service_areas,
-        competitive_advantages: typeof brand.competitive_advantages === 'string' ? brand.competitive_advantages.split('\n').map(s=>s.trim()).filter(s=>s) : brand.competitive_advantages,
-        customer_pain_points: typeof brand.customer_pain_points === 'string' ? brand.customer_pain_points.split('\n').map(s=>s.trim()).filter(s=>s) : brand.customer_pain_points,
-        customer_desires: typeof brand.customer_desires === 'string' ? brand.customer_desires.split('\n').map(s=>s.trim()).filter(s=>s) : brand.customer_desires,
-        customer_objections: typeof brand.customer_objections === 'string' ? brand.customer_objections.split('\n').map(s=>s.trim()).filter(s=>s) : brand.customer_objections,
-        platform_rules: typeof brand.platform_rules === 'string' ? brand.platform_rules.split('\n').map(s=>s.trim()).filter(s=>s) : brand.platform_rules,
-        default_hashtags: typeof brand.default_hashtags === 'string' ? brand.default_hashtags.split(',').map(s=>s.trim()).filter(s=>s) : brand.default_hashtags,
-        required_keywords: typeof brand.required_keywords === 'string' ? brand.required_keywords.split(',').map(s=>s.trim()).filter(s=>s) : brand.required_keywords,
-        prohibited_terms: typeof brand.prohibited_terms === 'string' ? brand.prohibited_terms.split(',').map(s=>s.trim()).filter(s=>s) : brand.prohibited_terms,
-        writing_rules: typeof brand.writing_rules === 'string' ? brand.writing_rules.split('\n').map(s=>s.trim()).filter(s=>s) : brand.writing_rules
+        ...cleanBrand,
+        service_areas: typeof cleanBrand.service_areas === 'string' ? cleanBrand.service_areas.split(',').map(s=>s.trim()).filter(s=>s) : (cleanBrand.service_areas || null),
+        competitive_advantages: typeof cleanBrand.competitive_advantages === 'string' ? cleanBrand.competitive_advantages.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.competitive_advantages || null),
+        customer_pain_points: typeof cleanBrand.customer_pain_points === 'string' ? cleanBrand.customer_pain_points.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.customer_pain_points || null),
+        customer_desires: typeof cleanBrand.customer_desires === 'string' ? cleanBrand.customer_desires.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.customer_desires || null),
+        customer_objections: typeof cleanBrand.customer_objections === 'string' ? cleanBrand.customer_objections.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.customer_objections || null),
+        platform_rules: typeof cleanBrand.platform_rules === 'string' ? cleanBrand.platform_rules.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.platform_rules || null),
+        default_hashtags: typeof cleanBrand.default_hashtags === 'string' ? cleanBrand.default_hashtags.split(',').map(s=>s.trim()).filter(s=>s) : (cleanBrand.default_hashtags || null),
+        required_keywords: typeof cleanBrand.required_keywords === 'string' ? cleanBrand.required_keywords.split(',').map(s=>s.trim()).filter(s=>s) : (cleanBrand.required_keywords || null),
+        prohibited_terms: typeof cleanBrand.prohibited_terms === 'string' ? cleanBrand.prohibited_terms.split(',').map(s=>s.trim()).filter(s=>s) : (cleanBrand.prohibited_terms || null),
+        writing_rules: typeof cleanBrand.writing_rules === 'string' ? cleanBrand.writing_rules.split('\n').map(s=>s.trim()).filter(s=>s) : (cleanBrand.writing_rules || null),
+        emoji_limit: cleanBrand.emoji_limit === '' ? null : parseInt(cleanBrand.emoji_limit, 10),
+        is_active: Boolean(cleanBrand.is_active),
+        is_default: Boolean(cleanBrand.is_default)
       };
       
       let res;
@@ -53,11 +59,12 @@ const BrandProfileTab = ({ brand, setBrand, isNew, onSaved }) => {
       }
       if (onSaved) onSaved(res.data);
     } catch (err) {
+      console.error("Lỗi khi lưu brand:", err);
       if (err.errors) {
-        const msgs = Object.values(err.errors).flat().join(' ');
-        setErrorMsg(msgs);
+        const msgs = Object.values(err.errors).flat().join(' \n');
+        setErrorMsg(`Lỗi xác thực: \n${msgs}`);
       } else {
-        setErrorMsg(err.message || 'Lỗi lưu thương hiệu');
+        setErrorMsg(err.message || 'Lỗi lưu thương hiệu. Vui lòng thử lại.');
       }
     } finally {
       setSaving(false);

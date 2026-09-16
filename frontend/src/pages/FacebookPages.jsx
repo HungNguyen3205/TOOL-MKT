@@ -208,8 +208,8 @@ const FacebookPages = () => {
                     <div>
                       <h4 style={{ margin: '0 0 5px 0', fontSize: 'var(--dn-text-lg)', color: 'var(--dn-text-primary)' }}>{page.page_name}</h4>
                       <div style={{ display: 'flex', gap: '10px', alignItems: 'center', fontSize: 'var(--dn-text-sm)' }}>
-                        <span style={{ color: page.status === 'active' ? 'var(--dn-color-success)' : 'var(--dn-color-danger)', fontWeight: 'bold' }}>
-                          ● {page.status === 'active' ? 'Đã kết nối' : 'Mất kết nối'}
+                        <span style={{ color: page.connection_status === 'connected' ? 'var(--dn-color-success)' : 'var(--dn-color-danger)', fontWeight: 'bold' }}>
+                          ● {page.connection_status === 'connected' ? 'Đã kết nối' : 'Mất kết nối'}
                         </span>
                       </div>
                     </div>

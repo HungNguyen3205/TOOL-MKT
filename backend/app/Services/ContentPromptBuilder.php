@@ -51,8 +51,11 @@ class ContentPromptBuilder
         if ($data->brand) {
             if ($data->brand->tone) $prompt .= "- Giọng văn chung của thương hiệu: " . $data->brand->tone . "\n";
             if ($data->brand->brand_personality) $prompt .= "- Tính cách thương hiệu: " . $data->brand->brand_personality . "\n";
-            if ($data->brand->emoji_limit !== null) $prompt .= "- Giới hạn emoji: Tối đa " . $data->brand->emoji_limit . " emoji mỗi bài.\n";
-            else $prompt .= "- Giới hạn emoji: Tối đa 3-5 emoji mỗi bài.\n";
+            if ($data->brand->emoji_limit !== null) {
+                $prompt .= "- Sử dụng các biểu tượng cảm xúc (emoji) sinh động để trang trí bài viết cho đẹp mắt (sử dụng tối đa " . $data->brand->emoji_limit . " emoji).\n";
+            } else {
+                $prompt .= "- Sử dụng biểu tượng cảm xúc (emoji) sinh động, hợp lý để trang trí bài viết (khoảng 3-5 emoji).\n";
+            }
             
             if (!empty($data->brand->writing_rules)) {
                 $prompt .= "- Các quy tắc viết riêng:\n  + " . implode("\n  + ", $data->brand->writing_rules) . "\n";
@@ -181,7 +184,7 @@ class ContentPromptBuilder
         $msg .= "--- 8. OUTPUT SCHEMA (ĐỊNH DẠNG ĐẦU RA) ---\n";
         $msg .= "TRẢ VỀ DUY NHẤT ĐỊNH DẠNG JSON. KHÔNG SỬ DỤNG MARKDOWN CODE FENCE (```json).\n";
         $msg .= "JSON phải có cấu trúc chính xác như sau:\n";
-        $msg .= '{"versions":[{"title":"Tiêu đề bài viết","content":"Nội dung chính","cta":"Lời kêu gọi hành động","hashtags":["#Hashtag1","#Hashtag2"]}]}';
+        $msg .= '{"versions":[{"title":"Tiêu đề bài viết","content":"Nội dung chính","cta":"Lời kêu gọi hành động","hashtags":["#Hashtag1","#Hashtag2"],"image_prompt":"[BẮT BUỘC bằng tiếng Anh] Viết một prompt tạo ảnh (text-to-image) cực kỳ chi tiết, chất lượng cao. Bao gồm: Chủ thể chính (người/vật), hành động, cảm xúc, trang phục, bối cảnh xung quanh, góc máy (camera angle), ánh sáng (lighting - vd: cinematic lighting, golden hour), phong cách nghệ thuật (vd: realistic, photography, 8k resolution, masterpiece)."}]}';
         $msg .= "\n-------------------------------------------\n";
 
         return $msg;

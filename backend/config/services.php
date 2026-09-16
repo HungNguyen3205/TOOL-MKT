@@ -28,9 +28,15 @@ return [
         'app_secret' => env('FACEBOOK_APP_SECRET'),
         'redirect' => env('FACEBOOK_REDIRECT_URI'),
         'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v20.0'),
-        'scopes' => env('FACEBOOK_SCOPES', 'pages_show_list,pages_manage_posts,pages_read_engagement'),
+        'scopes' => env('FACEBOOK_SCOPES', 'pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_engagement,pages_read_user_content'),
         'frontend_redirect' => env('FACEBOOK_FRONTEND_REDIRECT_URL'),
         'timeout' => env('FACEBOOK_HTTP_TIMEOUT', 30),
+    ],
+
+    'google_drive' => [
+        'enabled' => env('GOOGLE_DRIVE_ENABLED', false),
+        'credentials_path' => env('GOOGLE_DRIVE_CREDENTIALS_PATH'),
+        'timeout' => env('GOOGLE_DRIVE_TIMEOUT', 30),
     ],
 
     'ai_quality' => [
@@ -42,7 +48,7 @@ return [
 
     'ai' => [
         'text_provider' => env('AI_TEXT_PROVIDER', 'gemini'),
-        'image_provider' => env('AI_IMAGE_PROVIDER', 'pollinations'),
+        'image_provider' => env('AI_IMAGE_PROVIDER', 'gemini'),
         'text_fallback_enabled' => env('AI_FALLBACK_ENABLED', false),
         'image_fallback_enabled' => env('IMAGE_FALLBACK_ENABLED', false),
     ],
@@ -50,6 +56,7 @@ return [
     'gemini' => [
         'api_key' => env('GEMINI_API_KEY'),
         'text_model' => env('GEMINI_TEXT_MODEL', 'gemini-3.5-flash-lite'),
+        'image_model' => env('GEMINI_IMAGE_MODEL', 'imagen-3.0-generate-001'),
         'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
         'timeout' => env('GEMINI_TIMEOUT', 60),
         'max_output_tokens' => env('GEMINI_MAX_OUTPUT_TOKENS', 800),
