@@ -2,57 +2,59 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\PostComment;
 use App\Jobs\PublishScheduledCommentJob;
+use App\Models\PostComment;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
 class PublishDueComments extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'comments:publish-due';
+    protected $signature = 'comments:publish-due {--limit=100}';
+    protected $description = 'Atomically dispatch due scheduled comments to Facebook';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'Publish due scheduled comments to Facebook';
-
-    /**
-     * Execute the console command.
-     */
-    public function handle()
+    public function handle(): int
     {
-        $this->info('Finding due comments to publish...');
+        $limit = max(1, min((int) $this->option('limit'), 500));
+        $dispatched = 0;
 
-        // Find comments that are scheduled and due
-        $dueComments = PostComment::where('status', PostComment::STATUS_SCHEDULED)
-            ->where('scheduled_at', '<=', now())
+        PostComment::query()
+            ->where('status', PostComment::STATUS_SCHEDULED)
             ->whereNull('facebook_comment_id')
-            ->get();
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '<=', now())
+            ->orderBy('scheduled_at')
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id')
+            ->each(function (int $commentId) use (&$dispatched) {
+                $claimed = PostComment::query()
+                    ->whereKey($commentId)
+                    ->where('status', PostComment::STATUS_SCHEDULED)
+                    ->whereNull('facebook_comment_id')
+                    ->update(['status' => PostComment::STATUS_PUBLISHING]);
 
-        $count = $dueComments->count();
-        $this->info("Found {$count} comments due for publishing.");
+                if ($claimed !== 1) {
+                    return;
+                }
 
-        foreach ($dueComments as $comment) {
-            // Use atomic update to prevent duplicate dispatching
-            $updated = PostComment::where('id', $comment->id)
-                ->where('status', PostComment::STATUS_SCHEDULED)
-                ->update(['status' => PostComment::STATUS_PUBLISHING]);
+                try {
+                    PublishScheduledCommentJob::dispatch($commentId);
+                    $dispatched++;
+                } catch (\Throwable $exception) {
+                    PostComment::query()->whereKey($commentId)->update([
+                        'status' => PostComment::STATUS_SCHEDULED,
+                        'last_error_message' => $exception->getMessage(),
+                    ]);
 
-            if ($updated) {
-                PublishScheduledCommentJob::dispatch($comment);
-                $this->info("Dispatched comment {$comment->id} for publishing.");
-            } else {
-                Log::warning("Comment {$comment->id} was picked up but could not be locked for publishing (already processing?).");
-            }
-        }
+                    Log::error('Could not dispatch scheduled post comment.', [
+                        'comment_id' => $commentId,
+                        'exception' => $exception->getMessage(),
+                    ]);
+                }
+            });
 
-        $this->info('Done processing due comments.');
+        $this->info("Dispatched {$dispatched} due comments.");
+
+        return self::SUCCESS;
     }
 }
