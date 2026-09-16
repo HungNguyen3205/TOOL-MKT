@@ -10,3 +10,5 @@ Artisan::command('inspire', function () {
 use Illuminate\Support\Facades\Schedule;
 Schedule::command('posts:publish-due')->everyMinute()->withoutOverlapping();
 Schedule::command('comments:publish-due')->everyMinute()->withoutOverlapping();
+// Compatibility scheduler for the existing CommentManagement screen.
+Schedule::command('comments:process-scheduled')->everyMinute()->withoutOverlapping();
